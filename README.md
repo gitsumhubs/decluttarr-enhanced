@@ -8,54 +8,74 @@ _Like this app? Thanks for giving it a_ ⭐️
 -   [Dependencies & Hints & FAQ](#dependencies--hints--faq)
 -   [Getting started](#getting-started)
 -   [Explanation of the settings](#explanation-of-the-settings)
--   [Credits](#credits)
 -   [Disclaimer](#disclaimer)
 
 ## Overview
 
-Decluttarr keeps the radarr & sonarr & lidarr & readarr & whisparr queue free of stalled / redundant downloads
+Decluttarr is a helper tool that works with the *arr-application suite, and automates the clean-up for their download queues, keeping them free of stalled / redundant downloads. 
+
+It supports [Radarr](https://github.com/Radarr/Radarr/), [Sonarr](https://github.com/Sonarr/Sonarr/), [Readarr](https://github.com/Readarr/Readarr/), [Lidarr](https://github.com/Lidarr/Lidarr/), and [Whisparr](https://github.com/Whisparr/Whisparr/).
 
 Feature overview:
 
--   Automatically delete downloads that are stuck downloading metadata (& trigger download from another source)
--   Automatically delete failed downloads (& trigger download from another source)
--   Automatically delete downloads belonging to radarr/sonarr/etc. items that have been deleted in the meantime ('Orphan downloads')
--   Automatically delete stalled downloads, after they have been found to be stalled multiple times in a row (& trigger download from another source)
--   Automatically delete slow downloads, after they have been found to be slow multiple times in a row (& trigger download from another source)
--   Automatically delete downloads belonging to radarr/sonarr/etc. items that are unmonitored
--   Automatically delete downloads that failed importing since they are not a format upgrade (i.e. a better version is already present)
+-   Preventing download of bad files and removing torrents with less than 100% availability (remove_bad_files)
+-   Removing downloads that failed to download (remove_failed_downloads)
+-   Removing downloads that failed to import (remove_failed_imports)
+-   Removing downloads that are stuck downloading metadata (remove_metadata_missing)
+-   Removing downloads that are missing files (remove_missing_files)
+-   Removing downloads belonging to movies/series/albums/etc that have been deleted since the download was started (remove_orphans)
+-   Removing downloads that are repeatedly have been found to be slow (remove_slow)
+-   Removing downloads that are stalled
+-   Removing downloads belonging to movies/series/albums etc. that have been marked as "unmonitored"
+-   Periodically searching for better content on movies/series/albums etc. where cutoff has not been reached yet
+-   Periodcially searching for missing content that has not yet been found
 
-You may run this locally by launching main.py, or by pulling the docker image.
-You can find a sample docker-compose.yml [here](#method-1-docker).
+
+Key behaviors:
+-   Torrents of private trackers and public trackers in different ways (they can be removed, be skipped entirely, or be tagged as 'obsolete', so that other programs can remove them once the seed targets have been reached)
+-   If a job removes a download, it will automatically trigger a search for a new download, and remove the (partial) files downloaded thus far
+-   Certain jobs add removed downloads automatically to the blocklists of the arr-applications, to prevent the same download from being grabbed again
+-   If certain downloads should not be touched by decluttarr, they can be tagged with a protection-tag in Qbit 
+-   You can test decluttarr, which shows you what decluttarr would do, without it actually doing it (test_run)
+-   Decluttarr supports multiple instances (for instance, multiple Sonarr instances) as well as multiple qBittorrent instances
+
+How to run this:
+-   There are two ways how to run decluttarr. 
+-   Either, decluttarr is run as local script (run main.py) and settings are maintained in a config.yaml
+-   Alternatively, delcuttarr is run as docker image. Here, either all settings can either be configured via docker-compose, or alternatively also the config.yaml is used
+-   Check out [Getting started](#getting-started)
+
 
 ## Dependencies & Hints & FAQ
 
 -   Use Sonarr v4 & Radarr v5, else certain features may not work correctly
 -   qBittorrent is recommended but not required. If you don't use qBittorrent, you will experience the following limitations:
     -   When detecting slow downloads, the speeds provided by the \*arr apps will be used, which is less accurate than what qBittorrent returns when queried directly
-    -   The feature that allows to protect downloads from removal (NO_STALLED_REMOVAL_QBIT_TAG) does not work
-    -   The feature that ignores private trackers does not work
+    -   The feature that allows to protect downloads from removal (protected_tag) does not work
+    -   The feature that distinguishes private and private trackers (private_tracker_handling, public_tracker_handling) does not work
+    -   Removal of bad files and <100% availabiltiy (remove_bad_files) does not work 
 -   If you see strange errors such as "found 10 / 3 times", consider turning on the setting "Reject Blocklisted Torrent Hashes While Grabbing". On nightly Radarr/Sonarr/Readarr/Lidarr/Whisparr, the option is located under settings/indexers in the advanced options of each indexer, on Prowlarr it is under settings/apps and then the advanced settings of the respective app
--   When broken torrents are removed the files belonging to them are deleted
--   Across all removal types: A new download from another source is automatically added by radarr/sonarr/lidarr/readarr/whisparr (if available)
--   If you use qBittorrent and none of your torrents get removed and the verbose logs tell that all torrents are protected by the NO_STALLED_REMOVAL_QBIT_TAG even if they are not, you may be using a qBittorrent version that has problems with API calls and you may want to consider switching to a different qBit image (see https://github.com/ManiMatter/decluttarr/issues/56)
+-   If you use qBittorrent and none of your torrents get removed and the verbose logs tell that all torrents are protected by the protected_tag even if they are not, you may be using a qBittorrent version that has problems with API calls and you may want to consider switching to a different qBit image (see https://github.com/ManiMatter/decluttarr/issues/56)
 -   Currently, “\*Arr” apps are only supported in English. Refer to issue https://github.com/ManiMatter/decluttarr/issues/132 for more details
 -   If you experience yaml issues, please check the closed issues. There are different notations, and it may very well be that the issue you found has already been solved in one of the issues. Once you figured your problem, feel free to post your yaml to help others here: https://github.com/ManiMatter/decluttarr/issues/173
--   declutarr only supports single radarr / sonarr instances. If you have multiple instances of those \*arrs, solution is to run multiple decluclutarrs as well
+
 
 ## Getting started
 
-There's two ways to run this:
+There's two (and a half) ways to run this:
+-   As a docker container with docker-compose, whilst leaving the detailed configuration in a separate yaml file (see [Method 1](#method-1-docker-with-config-file)). This is the __recommended setup__ when running in docker
+-   As a docker container with docker-compose, with all configuration in your docker-compose (can be lengthy) (see [Method 2](#method-1-docker-with-config-file-recommended-setup))
+-   By cloning the repository and running the script locally (see [Method 3](#method-3-running-locally))
 
--   As a docker container with docker-compose
--   By cloning the repository and running the script manually
+The ways are explained below and there's an explanation for the different settings below that
 
-Both ways are explained below and there's an explanation for the different settings below that
+### Method 1: Docker (with config file) __[recommended setup]__
+1. Use the following input for your `docker-compose.yml`
+2. Download the config_example.yaml from the config folder (on github) and put it into your mounted folder
+3. Rename it to config.yaml and adjust the settings to your needs
+4. Run `docker-compose up -d` in the directory where the file is located to create the docker container
 
-### Method 1: Docker
-
-1. Make a `docker-compose.yml` file
-2. Use the following as a base for that and tweak the settings to your needs
+Note: Always pull the "**latest**" version. The "dev" version is for testing only, and should only be pulled when contributing code or supporting with bug fixes
 
 ```yaml
 version: "3.3"
@@ -68,78 +88,196 @@ services:
       TZ: Europe/Zurich
       PUID: 1000
       PGID: 1000
-
-      ## General
-      # TEST_RUN: True
-      # SSL_VERIFICATION: False
-      LOG_LEVEL: INFO
-
-      ## Features
-      REMOVE_TIMER: 10
-      REMOVE_FAILED: True
-      REMOVE_FAILED_IMPORTS: True
-      REMOVE_METADATA_MISSING: True
-      REMOVE_MISSING_FILES: True
-      REMOVE_ORPHANS: True
-      REMOVE_SLOW: True
-      REMOVE_STALLED: True
-      REMOVE_UNMONITORED: True
-      RUN_PERIODIC_RESCANS: '
-        {
-        "SONARR": {"MISSING": true, "CUTOFF_UNMET": true, "MAX_CONCURRENT_SCANS": 3, "MIN_DAYS_BEFORE_RESCAN": 7},
-        "RADARR": {"MISSING": true, "CUTOFF_UNMET": true, "MAX_CONCURRENT_SCANS": 3, "MIN_DAYS_BEFORE_RESCAN": 7}
-        }'
-
-      # Feature Settings
-      PERMITTED_ATTEMPTS: 3
-      NO_STALLED_REMOVAL_QBIT_TAG: Don't Kill
-      MIN_DOWNLOAD_SPEED: 100
-      FAILED_IMPORT_MESSAGE_PATTERNS: '
-        [
-        "Not a Custom Format upgrade for existing",
-        "Not an upgrade for existing"
-        ]'
-      IGNORED_DOWNLOAD_CLIENTS: ["emulerr"]
-
-      ## Radarr
-      RADARR_URL: http://radarr:7878
-      RADARR_KEY: $RADARR_API_KEY
-
-      ## Sonarr
-      SONARR_URL: http://sonarr:8989
-      SONARR_KEY: $SONARR_API_KEY
-
-      ## Lidarr
-      LIDARR_URL: http://lidarr:8686
-      LIDARR_KEY: $LIDARR_API_KEY
-
-      ## Readarr
-      READARR_URL: http://readarr:8787
-      READARR_KEY: $READARR_API_KEY
-
-      ## Whisparr
-      WHISPARR_URL: http://whisparr:6969
-      WHISPARR_KEY: $WHISPARR_API_KEY
-
-      ## qBitorrent
-      QBITTORRENT_URL: http://qbittorrent:8080
-      # QBITTORRENT_USERNAME: Your name
-      # QBITTORRENT_PASSWORD: Your password
-
+    volumes:
+      - $DOCKERDIR/appdata/decluttarr/config.yaml:/config/config.yaml
 ```
 
-3. Run `docker-compose up -d` in the directory where the file is located to create the docker container
-   Note: Always pull the "**latest**" version. The "dev" version is for testing only, and should only be pulled when contributing code or supporting with bug fixes
 
-### Method 2: Running manually
+### Method 2: Docker (without config file)
+
+1. Use the following input for your `docker-compose.yml`
+2. Tweak the settings to your needs
+3. Remove the things that are commented out (if you don't need them), or uncomment them
+4. If you face problems with yaml formats etc, please first check the open and closed issues on github, before opening new ones
+5. Run `docker-compose up -d` in the directory where the file is located to create the docker container
+
+Note: Always pull the "**latest**" version. The "dev" version is for testing only, and should only be pulled when contributing code or supporting with bug fixes
+```yaml
+version: "3.3"
+services:
+  decluttarr:
+    image: ghcr.io/manimatter/decluttarr:latest
+    container_name: decluttarr
+    restart: always
+    environment:
+      TZ: Europe/Zurich
+      PUID: 1000
+      PGID: 1000
+
+      # general settings
+      GENERAL: >
+        {
+          "log_level": "VERBOSE",
+          "test_run": true,
+          "timer": 10,
+          "ignored_download_clients": [],
+          "ssl_verification": true
+          // "private_tracker_handling": "obsolete_tag", // remove, skip, obsolete_tag. Optional. Default: remove
+          // "public_tracker_handling": "remove", // remove, skip, obsolete_tag. Optional. Default: remove
+          // "obsolete_tag": "Obsolete", // optional. Default: "Obsolete"
+          // "protected_tag": "Keep" // optional. Default: "Keep"
+        }
+
+      # job defaults
+      JOB_DEFAULTS: >
+        {
+          "max_strikes": 3,
+          "min_days_between_searches": 7,
+          "max_concurrent_searches": 3
+        }
+
+      # jobs
+      JOBS: >
+        {
+          "remove_bad_files": {},
+          "remove_failed_downloads": {},
+          "remove_failed_imports": {
+            // "message_patterns": ["*"]
+          },
+          "remove_metadata_missing": {
+            // "max_strikes": 3
+          },
+          "remove_missing_files": {},
+          "remove_orphans": {},
+          "remove_slow": {
+            // "min_speed": 100,
+            // "max_strikes": 3
+          },
+          "remove_stalled": {
+            // "max_strikes": 3
+          },
+          "remove_unmonitored": {},
+          "search_unmet_cutoff_content": {
+            // "min_days_between_searches": 7,
+            // "max_concurrent_searches": 3
+          },
+          "search_missing_content": {
+            // "min_days_between_searches": 7,
+            // "max_concurrent_searches": 3
+          }
+        }
+
+      # instances
+      INSTANCES: >
+        {
+          "sonarr": [
+            { "base_url": "http://sonarr:8989", "api_key": "xxxx" }
+          ],
+          "radarr": [
+            { "base_url": "http://radarr:7878", "api_key": "xxxx" }
+          ],
+          "readarr": [
+            { "base_url": "http://readarr:8787", "api_key": "xxxx" }
+          ],
+          "lidarr": [
+            { "base_url": "http://lidarr:8686", "api_key": "xxxx" }
+          ],
+          "whisparr": [
+            { "base_url": "http://whisparr:6969", "api_key": "xxxx" }
+          ]
+        }
+
+      # download clients
+      DOWNLOAD_CLIENTS: >
+        {
+          "qbittorrent": [
+            {
+              "base_url": "http://qbittorrent:8080"
+              // "username": "xxxx", // optional
+              // "password": "xxxx", // optional
+              // "name": "qBittorrent" // optional; must match client name in *arr
+            }
+          ]
+        }
+
+```
+    environment:
+      <<: *default-tz-puid-pgid
+      LOG_LEVEL: DEBUG
+      TEST_RUN: True
+      TIMER: 10
+      # IGNORED_DOWNLOAD_CLIENTS: |
+      #   - emulerr
+      # SSL_VERIFICATION: true
+
+      # # --- Optional: Job Defaults ---
+      # MAX_STRIKES: 3
+      # MIN_DAYS_BETWEEN_SEARCHES: 7
+      # MAX_CONCURRENT_SEARCHES: 3
+
+      # # --- Jobs (short notation) ---
+      # REMOVE_BAD_FILES: True
+      # REMOVE_FAILED_DOWNLOADS: True
+      # REMOVE_FAILED_IMPORTS: True
+      # REMOVE_METADATA_MISSING: True
+      # REMOVE_MISSING_FILES: True
+      # REMOVE_ORPHANS: True
+      # REMOVE_SLOW: True
+      # REMOVE_STALLED: True
+      # REMOVE_UNMONITORED: True
+      # SEARCH_BETTER_CONTENT: True
+      # SEARCH_MISSING_CONTENT: True
+
+      # # --- OR: Jobs (with job-specific settings) ---
+      # REMOVE_BAD_FILES: True
+      # REMOVE_FAILED_DOWNLOADS: True
+      # REMOVE_FAILED_IMPORTS:
+      # REMOVE_METADATA_MISSING: |
+      #   max_strikes: 3
+      # REMOVE_MISSING_FILES: True
+      # REMOVE_ORPHANS: True
+      # REMOVE_SLOW: |
+      #   min_speed: 100
+      #   max_strikes: 3
+      # REMOVE_STALLED: |
+      #   max_strikes: 3
+      # REMOVE_UNMONITORED: True
+      # SEARCH_BETTER_CONTENT: |
+      #   min_days_between_searches: 7
+      #   max_concurrent_searches: 3
+      # SEARCH_MISSING_CONTENT: |
+      #   min_days_between_searches: 7
+      #   max_concurrent_searches: 3
+
+      # --- Instances ---
+      SONARR: |
+        - base_url: "http://sonarr:8989"
+          api_key: "bdc9d74fdb2b4627aec1cf6c93ed2b2d"
+
+      RADARR: |
+        - base_url: "http://radarr:7878"
+          api_key: "9412e07e582d4f9587fb56e8777ede10"
+
+      # READARR: |
+      #   - base_url: "http://readarr:8787"
+      #     api_key: "e65e8ad6cdb6434289df002b20a27dc3"
+
+      # --- Download Clients ---
+      QBITTORRENT: |
+        - base_url: "http://qbittorrent:8080"
+
+
+
+
+
+### Method 3: Running locally
 
 1. Clone the repository with `git clone -b latest https://github.com/ManiMatter/decluttarr.git`
 Note: Do provide the `-b latest` in the clone command, else you will be pulling the dev branch which is not what you are after.
-2. Rename the `config.conf-Example` inside the config folder to `config.conf`
-3. Tweak `config.conf` to your needs
+2. Rename the `config_example.yaml` inside the config folder to `config.yaml`
+3. Tweak `config.yaml` to your needs
 4. Install the libraries listed in the docker/requirements.txt (pip install -r requirements.txt)
 5. Run the script with `python3 main.py`
-   Note: The `config.conf` is disregarded when running via docker-compose.yml
 
 ## Explanation of the settings
 
@@ -164,6 +302,13 @@ Configures the general behavior of the application (across all features)
 -   Permissible Values: True, False
 -   Is Mandatory: No (Defaults to False)
 
+**TIMER**
+
+-   Sets the frequency of how often the queue is checked for orphan and stalled downloads
+-   Type: Integer
+-   Unit: Minutes
+-   Is Mandatory: No (Defaults to 10)
+
 **SSL_VERIFICATION**
 
 -   Turns SSL certificate verification on or off for all API calls
@@ -173,38 +318,83 @@ Configures the general behavior of the application (across all features)
 -   Permissible Values: True, False
 -   Is Mandatory: No (Defaults to True)
 
+**IGNORE_DOWNLOAD_CLIENTS**
+
+-   Allows you to configure download client names that will be skipped by decluttarr
+    Note: The names provided here have to 100% match with how you have named your download clients in your *arr application(s)
+-   Type: List of strings
+-   Is Mandatory: No (Defaults to [], ie. nothing ignored])
+
+**PRIVATE_TRACKER_HANDLING / PUBLIC_TRACKER_HANDLING**
+
+-   Defines what happens with private/public tracker torrents if they are flagged by a removal job
+-   Note that this only works for qbittorrent currently (if you set up qbittorrent in your config)
+    -   "remove" means that torrents are removed (default behavior)
+    -   "skip" means they are disregarded (which some users might find handy to protect their private trackers prematurely, ie., before their seed targets are met)
+    -   "obsolete_tag" means that rather than being removed, the torrents are tagged. This allows other applications (such as [qbit_manage](https://github.com/StuffAnThings/qbit_manage) to monitor them and remove them once seed targets are fulfilled
+-   Type: String
+-   Permissible Values: remove, skip, obsolete_tag
+-   Is Mandatory: No (Defaults to remove)
+
+
+**OBSOLETE_TAG**
+-   Only relevant in conjunction with PRIVATE_TRACKER_HANDLING / PUBLIC_TRACKER_HANDLING
+-   If either of these two settings are set to "obsolete_tag", then this setting can be used to define the tag that has to be applied
+-   Type: String
+-   Permissible Values: Any
+-   Is Mandatory: No (Defaults to "Obsolete")
+
+
+**PROTECTED_TAG**
+-   If you do not want a given torrent being removed by decluttarr in any circumstance, you can use this feature to protect it from being removed
+-   Go to qBittorrent and mark the torrent with the tag you define here - it won't be touched
+-   Note that this only works for qbittorrent currently (if you set up qbittorrent in your config)
+-   Type: String
+-   Permissible Values: Any
+-   Is Mandatory: No (Defaults to "Keep")
+
 ---
 
-### **Features settings**
+---
 
-Steers which type of cleaning is applied to the downloads queue
+### **Job Defaults**
 
-**REMOVE_TIMER**
+Certain jobs take in additional configuration settings. If you want to define these settings globally (for all jobs to which they apply), you can do this here. 
 
--   Sets the frequency of how often the queue is checked for orphan and stalled downloads
+If a job has the same settings configured on job-level, the job-level settings will take precedence.
+
+**MAX_STRIKES**
+
+-   Certain jobs wait before removing a download, until the jobs have caught the same download a given number of times. This is defined by max_strikes
+-   max_strikes defines the total permissible counts a job can catch a download; catching it once more, and it will remove the ownload.
 -   Type: Integer
--   Unit: Minutes
--   Is Mandatory: No (Defaults to 10)
+-   Unit: Number of times the job catches a download
+-   Is Mandatory: No (Defaults to 3)
 
-**REMOVE_FAILED**
+**MIN_DAYS_BETWEEN_SEARCHES**
 
--   Steers whether failed downloads with no connections are removed from the queue
--   These downloads are not added to the blocklist
-    - A new download from another source is automatically added by radarr/sonarr/lidarr/readarr/whisparr (if available)
--   Type: Boolean
--   Permissible Values: True, False
--   Is Mandatory: No (Defaults to False)
+-   Only relevant together with search_unmet_cutoff_content and search_missing_content
+-   Specified how many days should elapse before decluttarr tries to search for a given wanted item again
+-   Type: Integer
+-   Permissible Values: Any number
+-   Is Mandatory: No (Defaults to 7)
 
-**REMOVE_FAILED_IMPORTS**
+**MAX_CONCURRENT_SEARCHES**
 
--   Steers whether downloads that failed importing are removed from the queue
--   This can happen, for example, when a better version is already present
--   Note: Only considers an import failed if the import message contains a warning that is listed on FAILED_IMPORT_MESSAGE_PATTERNS (see below)
--   These downloads are added to the blocklist
--   If the setting IGNORE_PRIVATE_TRACKERS is true, and the affected torrent is a private tracker, the queue item will be removed, but the torrent files will be kept
--   Type: Boolean
--   Permissible Values: True, False
--   Is Mandatory: No (Defaults to False)
+-   Only relevant together with search_unmet_cutoff_content and search_missing_content
+-   Specified how many ites concurrently on a single arr should be search for in a given iteration
+-   Each arr counts separately
+-   Example: If your wanted-list has 100 entries, and you define "3" as your number, after roughly 30 searches you'll have all items on your list searched for.
+-   Since the timer-setting steer how often the jobs run, if you put 10minutes there, after one hour you'll have run 6x, and thus already processed 18 searches. Long story short: No need to put a very high number here (else you'll just create unecessary traffic on your end..).
+-   Type: Integer
+-   Permissible Values: Any number
+-   Is Mandatory: No (Defaults to 3)
+
+### **Jobs**
+
+This is the interesting section. It defines which job you want decluttarr to run for you.
+CONTINUE HEREEEEEEEE
+
 
 **REMOVE_METADATA_MISSING**
 
@@ -259,6 +449,20 @@ Steers which type of cleaning is applied to the downloads queue
 -   Permissible Values: True, False
 -   Is Mandatory: No (Defaults to False)
 
+**SKIP_FILES**
+- Steers whether files within torrents are marked as 'not download' if they match one of these conditions
+  1) They are less than 100% available
+  2) They are not one of the desired file types supported by the *arr apps:
+  3) They contain one of these words (case insensitive) and are smaller than 500 MB:
+     - Trailer
+     - Sample
+
+- If all files of a torrent are marked as 'not download' then the torrent will be removed and blacklisted
+- Note that this is only supported when qBittorrent is configured in decluttarr and it will turn on the setting 'Keep unselected files in ".unwanted" folder' in qBittorrent 
+- Type: Boolean
+- Permissible Values: True, False
+- Is Mandatory: No (Defaults to False)
+
 **RUN_PERIODIC_RESCANS**
 
 -   Steers whether searches are automatically triggered for items that are missing or have not yet met the cutoff
@@ -294,12 +498,12 @@ If it you face issues, please first check the closed issues before opening a new
 **MIN_DOWNLOAD_SPEED**
 
 -   Sets the minimum download speed for active downloads
--   If the increase in the downloaded file size of a download is less than this value between two consecutive checks, the download is considered slow and is removed if happening more ofthen than the permitted attempts
+-   If the increase in the downloaded file size of a download is less than this value between two consecutive checks, the download is considered slow and is removed if happening more ofthen than the permitted strikes
 -   Type: Integer
 -   Unit: KBytes per second
 -   Is Mandatory: No (Defaults to 100, but is only enforced when "REMOVE_SLOW" is true)
 
-**PERMITTED_ATTEMPTS**
+**PERMITTED_STRIKES**
 
 -   Defines how many times a download has to be caught as stalled, slow or stuck downloading metadata before it is removed
 -   Type: Integer
@@ -441,14 +645,6 @@ If a different torrent manager is used, comment out this section (see above the 
 -   Password used to log in to qBittorrent
 -   Optional; not needed if authentication bypassing on qBittorrent is enabled (for instance for local connections)
 
-## Credits
-
--   Script for detecting stalled downloads expanded on code by MattDGTL/sonarr-radarr-queue-cleaner
--   Script to read out config expanded on code by syncarr/syncarr
--   SONARR/RADARR team & contributors for their great product, API documenation, and guidance in their Discord channel
--   Particular thanks to them for adding an additional flag to their API that allowed this script detect downloads stuck finding metadata
--   craggles17 for arm compatibility
--   Fxsch for improved documentation / ReadMe
 
 ## Disclaimer
 

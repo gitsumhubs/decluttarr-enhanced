@@ -1,105 +1,69 @@
-from src.utils.shared import errorDetails, formattedQueueInfo, get_queue, execute_checks
-import sys, os, traceback
-import logging, verboselogs
+import fnmatch
+from src.jobs.removal_job import RemovalJob
 
-logger = verboselogs.VerboseLogger(__name__)
+class RemoveFailedImports(RemovalJob):
+    queue_scope = "normal"
+    blocklist = True
+
+    async def _find_affected_items(self):
+        queue = await self.queue_manager.get_queue_items(queue_scope="normal")
+        affected_items = []
+        patterns = self.job.message_patterns
+
+        for item in queue:
+            if not self._is_valid_item(item):
+                continue
+
+            removal_messages = self._prepare_removal_messages(item, patterns)
+            if removal_messages:
+                item["removal_messages"] = removal_messages
+                affected_items.append(item)
+
+        return affected_items
+
+    def _is_valid_item(self, item):
+        """Check if item has the necessary fields and is in a valid state."""
+        # Required fields that must be present in the item
+        required_fields = {"status", "trackedDownloadStatus", "trackedDownloadState", "statusMessages"}
+        
+        # Check if all required fields are present
+        if not all(field in item for field in required_fields):
+            return False
+
+        # Check if the item's status is completed and the tracked status is warning
+        if item["status"] != "completed" or item["trackedDownloadStatus"] != "warning":
+            return False
+
+        # Check if the tracked download state is one of the allowed states
+        if item["trackedDownloadState"] not in {"importPending", "importFailed", "importBlocked"}:
+            return False
+
+        # If all checks pass, the item is valid
+        return True
 
 
-async def remove_failed_imports(
-    settingsDict,
-    BASE_URL,
-    API_KEY,
-    NAME,
-    deleted_downloads,
-    defective_tracker,
-    protectedDownloadIDs,
-    privateDowloadIDs,
-):
-    # Detects downloads stuck downloading meta data and triggers repeat check and subsequent delete. Adds to blocklist
-    try:
-        failType = "failed import"
-        queue = await get_queue(BASE_URL, API_KEY, settingsDict)
-        logger.debug("remove_failed_imports/queue IN: %s", formattedQueueInfo(queue))
-        if not queue:
-            return 0
+    def _prepare_removal_messages(self, item, patterns):
+        """Prepare removal messages, adding the tracked download state and matching messages."""
+        messages = self._get_matching_messages(item["statusMessages"], patterns)
+        if not messages:
+            return []
 
-        # Find items affected
-        affectedItems = []
+        removal_messages = [f">>>>> Tracked Download State: {item['trackedDownloadState']}"] + messages
+        return removal_messages
 
-        # Check if any patterns have been specified
-        patterns = settingsDict.get("FAILED_IMPORT_MESSAGE_PATTERNS", [])
-        if not patterns:  # If patterns is empty or not present
-            patterns = None
-        for queueItem in queue:
-            if (
-                "status" in queueItem
-                and "trackedDownloadStatus" in queueItem
-                and "trackedDownloadState" in queueItem
-                and "statusMessages" in queueItem
-            ):
-
-                removal_messages = []
-                if (
-                    queueItem["status"] == "completed"
-                    and queueItem["trackedDownloadStatus"] == "warning"
-                    and queueItem["trackedDownloadState"]
-                    in {"importPending", "importFailed", "importBlocked"}
-                ):
-
-                    # Find messages that find specified pattern and put them into a "removal_message" that will be displayed in the logger when removing the affected item
-                    if not patterns:
-                        # No patterns defined - including all status messages in the removal_messages
-                        removal_messages.append(">>>>> Status Messages (All):")
-                        for statusMessage in queueItem["statusMessages"]:
-                            removal_messages.extend(
-                                f">>>>> - {message}"
-                                for message in statusMessage.get("messages", [])
-                            )
-                    else:
-                        # Specific patterns defined - only removing if any of these are matched
-                        for statusMessage in queueItem["statusMessages"]:
-                            messages = statusMessage.get("messages", [])
-                            for message in messages:
-                                if any(pattern in message for pattern in patterns):
-                                    removal_messages.append(f">>>>> - {message}")
-                            if removal_messages:
-                                removal_messages.insert(
-                                    0,
-                                    ">>>>> Status Messages (matching specified patterns):",
-                                )
-
-                if removal_messages:
-                    removal_messages = list(
-                        dict.fromkeys(removal_messages)
-                    )  # deduplication
-                    removal_messages.insert(
-                        0,
-                        ">>>>> Tracked Download State: "
-                        + queueItem["trackedDownloadState"],
-                    )
-                    queueItem["removal_messages"] = removal_messages
-                    affectedItems.append(queueItem)
-
-        check_kwargs = {
-            "settingsDict": settingsDict,
-            "affectedItems": affectedItems,
-            "failType": failType,
-            "BASE_URL": BASE_URL,
-            "API_KEY": API_KEY,
-            "NAME": NAME,
-            "deleted_downloads": deleted_downloads,
-            "defective_tracker": defective_tracker,
-            "privateDowloadIDs": privateDowloadIDs,
-            "protectedDownloadIDs": protectedDownloadIDs,
-            "addToBlocklist": True,
-            "doPrivateTrackerCheck": False,
-            "doProtectedDownloadCheck": True,
-            "doPermittedAttemptsCheck": False,
-            "extraParameters": {"keepTorrentForPrivateTrackers": True},
-        }
-        affectedItems = await execute_checks(**check_kwargs)
-
-        return len(affectedItems)
-    except Exception as error:
-        errorDetails(NAME, error)
-        return 0
+    def _get_matching_messages(self, status_messages, patterns):
+        """Extract messages matching the provided patterns (or all messages if no pattern)."""
+        matched_messages = []
+        
+        if not patterns:
+            # No patterns provided, include all messages
+            for status_message in status_messages:
+                matched_messages.extend(f">>>>> - {msg}" for msg in status_message.get("messages", []))
+        else:
+            # Patterns provided, match only those messages that fit the patterns
+            for status_message in status_messages:
+                for msg in status_message.get("messages", []):
+                    if any(fnmatch.fnmatch(msg, pattern) for pattern in patterns):
+                        matched_messages.append(f">>>>> - {msg}")
+        
+        return matched_messages
