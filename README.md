@@ -36,6 +36,8 @@ You can find a sample docker-compose.yml in the docker folder.
 - Across all removal types: A new download from another source is automatically added by radarr/sonarr/lidarr/readarr/whisparr (if available)
 - If you use qBittorrent and none of your torrents get removed and the verbose logs tell that all torrents are protected by the NO_STALLED_REMOVAL_QBIT_TAG even if they are not, you may be using a qBittorrent version that has problems with API calls and you may want to consider switching to a different qBit image (see https://github.com/ManiMatter/decluttarr/issues/56)
 - Currently, “*Arr” apps are only supported in English. Refer to issue https://github.com/ManiMatter/decluttarr/issues/132 for more details
+- If you experience yaml issues, please check the closed issues. There are different notations, and it may very well be that the issue you found has already been solved in one of the issues. Once you figured your problem, feel free to post your yaml to help others here: https://github.com/ManiMatter/decluttarr/issues/173
+- declutarr only supports single radarr / sonarr instances. If you have multiple instances of those *arrs, solution is to run multiple decluclutarrs as well
 
 ## Getting started
 There's two ways to run this:
@@ -249,6 +251,16 @@ Steers which type of cleaning is applied to the downloads queue
           "SONARR": {"MISSING": true, "CUTOFF_UNMET": true, "MAX_CONCURRENT_SCANS": 3, "MIN_DAYS_BEFORE_RESCAN": 7},
           "RADARR": {"MISSING": true, "CUTOFF_UNMET": true, "MAX_CONCURRENT_SCANS": 3, "MIN_DAYS_BEFORE_RESCAN": 7}
         }'
+```
+
+There are different yaml notations, any some users suggested the below alternative notation.
+If it you face issues, please first check the closed issues before opening a new one (e.g., https://github.com/ManiMatter/decluttarr/issues/173)
+```
+- RUN_PERIODIC_RESCANS=[
+{
+"SONARR":[{"MISSING":true, "CUTOFF_UNMET":true, "MAX_CONCURRENT_SCANS":3, "MIN_DAYS_BEFORE_RESCAN":7}],
+"RADARR":[{"MISSING":true, "CUTOFF_UNMET":true, "MAX_CONCURRENT_SCANS":3, "MIN_DAYS_BEFORE_RESCAN":7}]
+}
 ```
 
 **MIN_DOWNLOAD_SPEED**
