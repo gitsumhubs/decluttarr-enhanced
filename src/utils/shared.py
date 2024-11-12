@@ -314,14 +314,12 @@ def errorDetails(NAME, error):
     exc_type, exc_obj, exc_tb = sys.exc_info()
     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
     logger.warning(
-        ">>> Queue cleaning failed on %s. (File: %s / Line: %s / Error Message: %s / Error Type: %s)",
+        ">>> Queue cleaning failed on %s. (File: %s / Line: %s / %s)",
         NAME,
         fname,
         exc_tb.tb_lineno,
-        error,
-        exc_type,
+        traceback.format_exc()
     )
-    logger.debug(traceback.format_exc())
     return
 
 
@@ -353,6 +351,9 @@ def formattedQueueInfo(queue):
     except Exception as error:
         errorDetails("formattedQueueInfo", error)
         logger.debug("formattedQueueInfo/queue for debug: %s", str(queue))
+        if isinstance(error, KeyError):
+            logger.debug("formattedQueueInfo/queue_item with error for debug: %s", queue_item)
+           
         return "error"
 
 
