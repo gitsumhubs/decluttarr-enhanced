@@ -131,7 +131,8 @@ services:
 
 ### Method 2: Running manually
 
-1. Clone the repository with `git clone -b main https://github.com/ManiMatter/decluttarr.git`
+1. Clone the repository with `git clone -b latest https://github.com/ManiMatter/decluttarr.git`
+Note: Do provide the `-b latest` in the clone command, else you will be pulling the dev branch which is not what you are after.
 2. Rename the `config.conf-Example` inside the config folder to `config.conf`
 3. Tweak `config.conf` to your needs
 4. Install the libraries listed in the docker/requirements.txt (pip install -r requirements.txt)
