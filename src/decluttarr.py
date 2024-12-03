@@ -58,7 +58,7 @@ async def queueCleaner(
     logger.verbose("Cleaning queue on %s:", NAME)
     # Refresh queue:
     try:
-        full_queue = await get_queue(BASE_URL, API_KEY, params={full_queue_param: True})
+        full_queue = await get_queue(BASE_URL, API_KEY, settingsDict, params={full_queue_param: True})
         if full_queue:
             logger.debug("queueCleaner/full_queue at start:")
             logger.debug(full_queue)

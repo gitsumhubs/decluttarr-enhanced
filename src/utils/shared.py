@@ -22,7 +22,7 @@ async def get_arr_records(BASE_URL, API_KEY, params={}, end_point=""):
     return records["records"]
 
 
-async def get_queue(BASE_URL, API_KEY, params={}):
+async def get_queue(BASE_URL, API_KEY, settingsDict, params={}):
     # Refreshes and retrieves the current queue
     await rest_post(
         url=BASE_URL + "/command",
@@ -31,6 +31,7 @@ async def get_queue(BASE_URL, API_KEY, params={}):
     )
     queue = await get_arr_records(BASE_URL, API_KEY, params=params, end_point="queue")
     queue = filterOutDelayedQueueItems(queue)
+    queue = filterOutIgnoredDownloadClients(queue, settingsDict)
     return queue
 
 
@@ -56,6 +57,28 @@ def filterOutDelayedQueueItems(queue):
                 )
         else:
             filtered_queue.append(queue_item)
+    return filtered_queue
+
+
+def filterOutIgnoredDownloadClients(queue, settingsDict):
+    """
+    Filters out queue items whose download client is listed in IGNORED_DOWNLOAD_CLIENTS.
+    """
+    if queue is None:
+        return queue
+    filtered_queue = []
+
+    for queue_item in queue:
+        download_client = queue_item.get("downloadClient", "Unknown client")
+        if download_client in settingsDict["IGNORED_DOWNLOAD_CLIENTS"]:
+            logger.debug(
+                ">>> Queue item ignored due to ignored download client: %s (Download Client: %s)",
+                queue_item["title"],
+                download_client,
+            )
+        else:
+            filtered_queue.append(queue_item)
+
     return filtered_queue
 
 
@@ -154,7 +177,7 @@ async def execute_checks(
             )
         # Exit Logs
         if settingsDict["LOG_LEVEL"] == "DEBUG":
-            queue = await get_queue(BASE_URL, API_KEY)
+            queue = await get_queue(BASE_URL, API_KEY, settingsDict)
             logger.debug(
                 "execute_checks/queue OUT (failType: %s): %s",
                 failType,
@@ -318,7 +341,7 @@ def errorDetails(NAME, error):
         NAME,
         fname,
         exc_tb.tb_lineno,
-        traceback.format_exc()
+        traceback.format_exc(),
     )
     return
 
@@ -352,8 +375,10 @@ def formattedQueueInfo(queue):
         errorDetails("formattedQueueInfo", error)
         logger.debug("formattedQueueInfo/queue for debug: %s", str(queue))
         if isinstance(error, KeyError):
-            logger.debug("formattedQueueInfo/queue_item with error for debug: %s", queue_item)
-           
+            logger.debug(
+                "formattedQueueInfo/queue_item with error for debug: %s", queue_item
+            )
+
         return "error"
 
 

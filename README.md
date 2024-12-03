@@ -99,6 +99,7 @@ services:
                 "Not a Custom Format upgrade for existing",
                 "Not an upgrade for existing"
                 ]'
+            IGNORED_DOWNLOAD_CLIENTS: ["emulerr"]
 
             ## Radarr
             RADARR_URL: http://radarr:7878
@@ -334,6 +335,13 @@ If it you face issues, please first check the closed issues before opening a new
 -   Type: List
 -   Recommended values: ["Not a Custom Format upgrade for existing", "Not an upgrade for existing"]
 -   Is Mandatory: No (Defaults to [], which means all messages are failures)
+
+**IGNORED_DOWNLOAD_CLIENTS**
+
+- If specified, downloads of the listed download clients are not removed / skipped entirely
+- Is useful if multiple download clients are used and some of them are known to have slow downloads that recover (and thus should not be subject to slowness check), while other download clients should be monitored
+- Type: List
+- Is Mandatory: No (Defaults to [], which means no download clients are skipped)
 
 ---
 

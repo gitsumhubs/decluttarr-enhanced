@@ -29,7 +29,7 @@ async def remove_unmonitored(
     # Removes downloads belonging to movies/tv shows that are not monitored. Does not add to blocklist
     try:
         failType = "unmonitored"
-        queue = await get_queue(BASE_URL, API_KEY)
+        queue = await get_queue(BASE_URL, API_KEY, settingsDict)
         logger.debug("remove_unmonitored/queue IN: %s", formattedQueueInfo(queue))
         if not queue:
             return 0

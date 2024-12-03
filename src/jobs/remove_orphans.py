@@ -28,8 +28,10 @@ async def remove_orphans(
     # Removes downloads belonging to movies/tv shows that have been deleted in the meantime. Does not add to blocklist
     try:
         failType = "orphan"
-        full_queue = await get_queue(BASE_URL, API_KEY, params={full_queue_param: True})
-        queue = await get_queue(BASE_URL, API_KEY)
+        full_queue = await get_queue(
+            BASE_URL, API_KEY, settingsDict, params={full_queue_param: True}
+        )
+        queue = await get_queue(BASE_URL, API_KEY, settingsDict)
         logger.debug("remove_orphans/full queue IN: %s", formattedQueueInfo(full_queue))
         if not full_queue:
             return 0  # By now the queue may be empty
@@ -63,7 +65,9 @@ async def remove_orphans(
         logger.debug(
             "remove_orphans/full queue OUT: %s",
             formattedQueueInfo(
-                await get_queue(BASE_URL, API_KEY, params={full_queue_param: True})
+                await get_queue(
+                    BASE_URL, API_KEY, settingsDict, params={full_queue_param: True}
+                )
             ),
         )
         return len(affectedItems)
