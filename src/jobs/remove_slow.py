@@ -30,7 +30,7 @@ async def remove_slow(
     # Detects slow downloads and triggers delete. Adds to blocklist
     try:
         failType = "slow"
-        queue = await get_queue(BASE_URL, API_KEY)
+        queue = await get_queue(BASE_URL, API_KEY, settingsDict)
         logger.debug("remove_slow/queue IN: %s", formattedQueueInfo(queue))
         if not queue:
             return 0
