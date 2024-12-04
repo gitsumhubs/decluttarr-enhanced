@@ -56,7 +56,7 @@ async def remove_slow(
                         continue
                     if queueItem["status"] == "downloading":
                         if (
-                            queueItem["sizeleft"] == 0
+                            queueItem["size"] > 0 and queueItem["sizeleft"] == 0
                         ):  # Skip items that are finished downloading but are still marked as downloading. May be the case when files are moving
                             logger.info(
                                 ">>> Detected %s download that has completed downloading - skipping check (torrent files likely in process of being moved): %s",
