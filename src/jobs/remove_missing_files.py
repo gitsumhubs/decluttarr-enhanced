@@ -28,7 +28,7 @@ async def remove_missing_files(
     # Detects downloads broken because of missing files. Does not add to blocklist
     try:
         failType = "missing files"
-        queue = await get_queue(BASE_URL, API_KEY)
+        queue = await get_queue(BASE_URL, API_KEY, settingsDict)
         logger.debug("remove_missing_files/queue IN: %s", formattedQueueInfo(queue))
         if not queue:
             return 0

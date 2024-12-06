@@ -28,7 +28,7 @@ async def remove_failed(
     # Detects failed and triggers delete. Does not add to blocklist
     try:
         failType = "failed"
-        queue = await get_queue(BASE_URL, API_KEY)
+        queue = await get_queue(BASE_URL, API_KEY, settingsDict)
         logger.debug("remove_failed/queue IN: %s", formattedQueueInfo(queue))
 
         if not queue:

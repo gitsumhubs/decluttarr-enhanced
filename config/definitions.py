@@ -27,6 +27,7 @@ PERMITTED_ATTEMPTS              = get_config_value('PERMITTED_ATTEMPTS',        
 NO_STALLED_REMOVAL_QBIT_TAG     = get_config_value('NO_STALLED_REMOVAL_QBIT_TAG',   'feature_settings',     False,  str,   'Don\'t Kill')
 IGNORE_PRIVATE_TRACKERS         = get_config_value('IGNORE_PRIVATE_TRACKERS',       'feature_settings',     False,  bool,   True)
 FAILED_IMPORT_MESSAGE_PATTERNS  = get_config_value('FAILED_IMPORT_MESSAGE_PATTERNS','feature_settings',     False,  list,   [])
+IGNORED_DOWNLOAD_CLIENTS        = get_config_value('IGNORED_DOWNLOAD_CLIENTS',      'feature_settings',     False,  list,   [])
 
 # Radarr
 RADARR_URL                      = get_config_value('RADARR_URL',                    'radarr',       False,  str)

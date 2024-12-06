@@ -23,7 +23,7 @@ async def run_periodic_rescans(
     if not arr_type in settingsDict["RUN_PERIODIC_RESCANS"]:
         return
     try:
-        queue = await get_queue(BASE_URL, API_KEY)
+        queue = await get_queue(BASE_URL, API_KEY, settingsDict)
         check_on_endpoint = []
         RESCAN_SETTINGS = settingsDict["RUN_PERIODIC_RESCANS"][arr_type]
         if RESCAN_SETTINGS["MISSING"]:

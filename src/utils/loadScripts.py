@@ -29,6 +29,7 @@ async def getArrInstanceName(settingsDict, arrApp):
             settingsDict[arrApp + '_NAME'] = arrApp.title()
     return settingsDict
 
+
 async def getProtectedAndPrivateFromQbit(settingsDict):
     # Returns two lists containing the hashes of Qbit that are either protected by tag, or are private trackers (if IGNORE_PRIVATE_TRACKERS is true)
     protectedDownloadIDs = []
@@ -102,7 +103,8 @@ def showSettings(settingsDict):
     if settingsDict['QBITTORRENT_URL']: 
         logger.info('Downloads with this tag will be skipped: \"%s\"', settingsDict['NO_STALLED_REMOVAL_QBIT_TAG'])  
         logger.info('Private Trackers will be skipped: %s', settingsDict['IGNORE_PRIVATE_TRACKERS'])        
-    
+    if settingsDict['IGNORED_DOWNLOAD_CLIENTS']: 
+        logger.info('Download clients skipped: %s',", ".join(settingsDict['IGNORED_DOWNLOAD_CLIENTS']))
     logger.info('') 
     logger.info('*** Configured Instances ***')
     

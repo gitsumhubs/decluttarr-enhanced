@@ -30,7 +30,7 @@ async def remove_slow(
     # Detects slow downloads and triggers delete. Adds to blocklist
     try:
         failType = "slow"
-        queue = await get_queue(BASE_URL, API_KEY)
+        queue = await get_queue(BASE_URL, API_KEY, settingsDict)
         logger.debug("remove_slow/queue IN: %s", formattedQueueInfo(queue))
         if not queue:
             return 0
@@ -56,7 +56,7 @@ async def remove_slow(
                         continue
                     if queueItem["status"] == "downloading":
                         if (
-                            queueItem["sizeleft"] == 0
+                            queueItem["size"] > 0 and queueItem["sizeleft"] == 0
                         ):  # Skip items that are finished downloading but are still marked as downloading. May be the case when files are moving
                             logger.info(
                                 ">>> Detected %s download that has completed downloading - skipping check (torrent files likely in process of being moved): %s",

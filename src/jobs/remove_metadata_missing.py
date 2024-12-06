@@ -28,7 +28,7 @@ async def remove_metadata_missing(
     # Detects downloads stuck downloading meta data and triggers repeat check and subsequent delete. Adds to blocklist
     try:
         failType = "missing metadata"
-        queue = await get_queue(BASE_URL, API_KEY)
+        queue = await get_queue(BASE_URL, API_KEY, settingsDict)
         logger.debug("remove_metadata_missing/queue IN: %s", formattedQueueInfo(queue))
         if not queue:
             return 0
