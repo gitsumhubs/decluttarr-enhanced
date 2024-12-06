@@ -1,6 +1,7 @@
 # Shared Functions
 import logging, verboselogs
-
+import asyncio
+import requests
 logger = verboselogs.VerboseLogger(__name__)
 from src.utils.rest import rest_get, rest_delete, rest_post
 from src.utils.nest_functions import add_keys_nested_dict, nested_get
@@ -398,3 +399,18 @@ async def qBitOffline(settingsDict, failType, NAME):
             )
             return True
     return False
+
+async def qBitRefreshCookie(settingsDict):
+    try: 
+        response = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.post(settingsDict['QBITTORRENT_URL']+'/auth/login', data={'username': settingsDict['QBITTORRENT_USERNAME'], 'password': settingsDict['QBITTORRENT_PASSWORD']}, headers={'content-type': 'application/x-www-form-urlencoded'}, verify=settingsDict['SSL_VERIFICATION']))
+        if response.text == 'Fails.':
+            raise ConnectionError('Login failed.')
+        response.raise_for_status()
+        settingsDict['QBIT_COOKIE'] = {'SID': response.cookies['SID']} 
+        logger.debug('qBit cookie refreshed!')
+    except Exception as error:
+        logger.error('!! %s Error: !!', 'qBittorrent')
+        logger.error('> %s', error)
+        logger.error('> Details:')
+        logger.error(response.text)
+        settingsDict['QBIT_COOKIE'] = {}

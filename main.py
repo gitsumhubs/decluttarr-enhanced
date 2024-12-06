@@ -62,6 +62,14 @@ async def main(settingsDict):
     # Start Cleaning
     while True:
         logger.verbose("-" * 50)
+        
+        # Refresh qBit Cookie
+        if settingsDict["QBITTORRENT_URL"]:
+            await qBitRefreshCookie(settingsDict)
+            if not settingsDict["QBIT_COOKIE"]:
+                logger.error("Cookie Refresh failed - exiting decluttarr")
+                exit()
+
         # Cache protected (via Tag) and private torrents
         protectedDownloadIDs, privateDowloadIDs = await getProtectedAndPrivateFromQbit(
             settingsDict
