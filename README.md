@@ -60,71 +60,72 @@ Both ways are explained below and there's an explanation for the different setti
 ```yaml
 version: "3.3"
 services:
-    decluttarr:
-        image: ghcr.io/manimatter/decluttarr:latest
-        container_name: decluttarr
-        restart: always
-        environment:
-            TZ: Europe/Zurich
-            PUID: 1000
-            PGID: 1000
+  decluttarr:
+    image: ghcr.io/manimatter/decluttarr:latest
+    container_name: decluttarr
+    restart: always
+    environment:
+      TZ: Europe/Zurich
+      PUID: 1000
+      PGID: 1000
 
-            ## General
-            # TEST_RUN: True
-            # SSL_VERIFICATION: False
-            LOG_LEVEL: INFO
+      ## General
+      # TEST_RUN: True
+      # SSL_VERIFICATION: False
+      LOG_LEVEL: INFO
 
-            ## Features
-            REMOVE_TIMER: 10
-            REMOVE_FAILED: True
-            REMOVE_FAILED_IMPORTS: True
-            REMOVE_METADATA_MISSING: True
-            REMOVE_MISSING_FILES: True
-            REMOVE_ORPHANS: True
-            REMOVE_SLOW: True
-            REMOVE_STALLED: True
-            REMOVE_UNMONITORED: True
-            RUN_PERIODIC_RESCANS: '
-                {
-                "SONARR": {"MISSING": true, "CUTOFF_UNMET": true, "MAX_CONCURRENT_SCANS": 3, "MIN_DAYS_BEFORE_RESCAN": 7},
-                "RADARR": {"MISSING": true, "CUTOFF_UNMET": true, "MAX_CONCURRENT_SCANS": 3, "MIN_DAYS_BEFORE_RESCAN": 7}
-                }'
+      ## Features
+      REMOVE_TIMER: 10
+      REMOVE_FAILED: True
+      REMOVE_FAILED_IMPORTS: True
+      REMOVE_METADATA_MISSING: True
+      REMOVE_MISSING_FILES: True
+      REMOVE_ORPHANS: True
+      REMOVE_SLOW: True
+      REMOVE_STALLED: True
+      REMOVE_UNMONITORED: True
+      RUN_PERIODIC_RESCANS: '
+        {
+        "SONARR": {"MISSING": true, "CUTOFF_UNMET": true, "MAX_CONCURRENT_SCANS": 3, "MIN_DAYS_BEFORE_RESCAN": 7},
+        "RADARR": {"MISSING": true, "CUTOFF_UNMET": true, "MAX_CONCURRENT_SCANS": 3, "MIN_DAYS_BEFORE_RESCAN": 7}
+        }'
 
-            # Feature Settings
-            PERMITTED_ATTEMPTS: 3
-            NO_STALLED_REMOVAL_QBIT_TAG: Don't Kill
-            MIN_DOWNLOAD_SPEED: 100
-            FAILED_IMPORT_MESSAGE_PATTERNS: '
-                [
-                "Not a Custom Format upgrade for existing",
-                "Not an upgrade for existing"
-                ]'
-            IGNORED_DOWNLOAD_CLIENTS: ["emulerr"]
+      # Feature Settings
+      PERMITTED_ATTEMPTS: 3
+      NO_STALLED_REMOVAL_QBIT_TAG: Don't Kill
+      MIN_DOWNLOAD_SPEED: 100
+      FAILED_IMPORT_MESSAGE_PATTERNS: '
+        [
+        "Not a Custom Format upgrade for existing",
+        "Not an upgrade for existing"
+        ]'
+      IGNORED_DOWNLOAD_CLIENTS: ["emulerr"]
 
-            ## Radarr
-            RADARR_URL: http://radarr:7878
-            RADARR_KEY: $RADARR_API_KEY
+      ## Radarr
+      RADARR_URL: http://radarr:7878
+      RADARR_KEY: $RADARR_API_KEY
 
-            ## Sonarr
-            SONARR_URL: http://sonarr:8989
-            SONARR_KEY: $SONARR_API_KEY
+      ## Sonarr
+      SONARR_URL: http://sonarr:8989
+      SONARR_KEY: $SONARR_API_KEY
 
-            ## Lidarr
-            LIDARR_URL: http://lidarr:8686
-            LIDARR_KEY: $LIDARR_API_KEY
+      ## Lidarr
+      LIDARR_URL: http://lidarr:8686
+      LIDARR_KEY: $LIDARR_API_KEY
 
-            ## Readarr
-            READARR_URL: http://readarr:8787
-            READARR_KEY: $READARR_API_KEY
+      ## Readarr
+      READARR_URL: http://readarr:8787
+      READARR_KEY: $READARR_API_KEY
 
-            ## Whisparr
-            WHISPARR_URL: http://whisparr:6969
-            WHISPARR_KEY: $WHISPARR_API_KEY
+      ## Whisparr
+      WHISPARR_URL: http://whisparr:6969
+      WHISPARR_KEY: $WHISPARR_API_KEY
 
-            ## qBitorrent
-            QBITTORRENT_URL: http://qbittorrent:8080
-            # QBITTORRENT_USERNAME: Your name
-            # QBITTORRENT_PASSWORD: Your password
+      ## qBitorrent
+      QBITTORRENT_URL: http://qbittorrent:8080
+      # QBITTORRENT_USERNAME: Your name
+      # QBITTORRENT_PASSWORD: Your password
+
 ```
 
 3. Run `docker-compose up -d` in the directory where the file is located to create the docker container
