@@ -30,7 +30,7 @@ You can find a sample docker-compose.yml [here](#method-1-docker).
 
 ## Dependencies & Hints & FAQ
 
--   Use Sonarr v4 & Radarr v5 (currently 'nightly' tag instead of 'latest'), else certain features may not work correctly
+-   Use Sonarr v4 & Radarr v5, else certain features may not work correctly
 -   qBittorrent is recommended but not required. If you don't use qBittorrent, you will experience the following limitations:
     -   When detecting slow downloads, the speeds provided by the \*arr apps will be used, which is less accurate than what qBittorrent returns when queried directly
     -   The feature that allows to protect downloads from removal (NO_STALLED_REMOVAL_QBIT_TAG) does not work
