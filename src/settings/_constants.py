@@ -14,8 +14,7 @@ class Envs:
 
 
 class Paths:
-    logs = "./temp/log.txt"
-    tracker = "./temp/tracker.txt"
+    logs = "./temp/logs.txt"
     config_file = "./config/config.yaml"
 
 

@@ -8,7 +8,7 @@ _Like this app? Thanks for giving it a_ ⭐️
 - [Getting started](#getting-started)
   - [Running locally](#running-locally)
   - [Running in docker](#running-in-docker)
-    - [Docker-compose with config file (recomended)](#docker-docker-compose-together-with-configyaml)
+    - [Docker-compose with config file (recommended)](#docker-docker-compose-together-with-configyaml)
     - [Docker-compose only](#docker-specifying-all-settings-in-docker-compose)
 - [Explanation of the settings](#explanation-of-the-settings)
   - [General](#general)
@@ -149,6 +149,7 @@ services:
       PGID: 1000
     volumes:
       - $DOCKERDIR/appdata/decluttarr/config.yaml:/config/config.yaml
+      # - $DOCKERDIR/appdata/decluttarr/logs.txt:/temp/logs.txt # Uncomment to get logs in text file, too
 ```
 
 
@@ -257,6 +258,8 @@ services:
           # password: "$QBIT_PASSWORD" # (optional -> if not provided, assuming not needed)
           # name: "qBittorrent" # (optional -> if not provided, assuming "qBittorrent". Must correspond with what is specified in your *arr as download client name)
 
+    volumes:
+      # - $DOCKERDIR/appdata/decluttarr/logs.txt:/temp/logs.txt # Uncomment to get logs in text file, too
 ```
 
 
@@ -277,6 +280,9 @@ Configures the general behavior of the application (across all features)
 -   Type: String
 -   Permissible Values: CRITICAL, ERROR, WARNING, INFO, VERBOSE, DEBUG
 -   Is Mandatory: No (Defaults to INFO)
+-   Note:
+    - Logs are also written into the file /temp/logs.txt inside the decluttarr directory
+    - If you run decluttarr inside docker, mount this file as volume (see docker-compose examples) to see them in your host system
 
 #### TEST_RUN
 
