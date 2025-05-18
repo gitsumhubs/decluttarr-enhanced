@@ -4,3 +4,4 @@ test*.py
 ToDo
 .vscode
 .notebooks
+logs/*

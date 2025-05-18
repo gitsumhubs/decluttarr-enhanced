@@ -148,8 +148,8 @@ services:
       PUID: 1000
       PGID: 1000
     volumes:
-      - $DOCKERDIR/appdata/decluttarr/config.yaml:/config/config.yaml
-      # - $DOCKERDIR/appdata/decluttarr/logs.txt:/temp/logs.txt # Uncomment to get logs in text file, too
+      - $DOCKERDIR/appdata/decluttarr/config.yaml:/app/config/config.yaml
+      # - $DOCKERDIR/appdata/decluttarr/logs:/app/logs # Uncomment to get logs in text file, too
 ```
 
 
@@ -259,7 +259,7 @@ services:
           # name: "qBittorrent" # (optional -> if not provided, assuming "qBittorrent". Must correspond with what is specified in your *arr as download client name)
 
     volumes:
-      # - $DOCKERDIR/appdata/decluttarr/logs.txt:/temp/logs.txt # Uncomment to get logs in text file, too
+      # - $DOCKERDIR/appdata/decluttarr/logs:/app/logs # Uncomment to get logs in text file, too
 ```
 
 
