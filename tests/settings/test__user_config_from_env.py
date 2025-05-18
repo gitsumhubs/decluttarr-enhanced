@@ -92,7 +92,7 @@ qbit_expected = yaml.safe_load(qbit_yaml)
     ("jobs", "remove_stalled", remove_stalled_expected),
     ("instances", "radarr", radarr_expected),
     ("instances", "sonarr", sonarr_expected),
-    ("downloaders", "qbittorrent", qbit_expected),
+    ("download_clients", "qbittorrent", qbit_expected),
 ])
 def test_env_loading_parametrized(env_vars, section, key, expected): # pylint: disable=unused-argument
     config = _load_from_env()

@@ -40,7 +40,7 @@ _Like this app? Thanks for giving it a_ ⭐️
     - [RADARR](#radarr)
     - [READARR](#readarr)
     - [LIDARR](#lidarr)
-    - [WHISPAR](#whisparr)
+    - [WHISPARR](#whisparr)
   - [Downloaders](#download-clients)
     - [QBITTORRENT](#qbittorrent)
 - [Disclaimer](#disclaimer)
