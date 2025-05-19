@@ -17,6 +17,7 @@ _Like this app? Thanks for giving it a_ ⭐️
     - [TIMER](#timer)
     - [SSL_VERIFICATION](#ssl_verification)
     - [IGNORE_DOWNLOAD_CLIENTS](#ignore_download_clients)
+    - [PRIVATE_TRACKER_HANDLING / PUBLIC_TRACKER_HANDLING](#private_tracker_handling--public_tracker_handling)
     - [OBSOLETE_TAG](#obsolete_tag)
     - [PROTECTED_TAGS](#protected_tag)
   - [Job Defaults](#job-defaults)
@@ -320,7 +321,7 @@ Configures the general behavior of the application (across all features)
 -   Note that this only works for qbittorrent currently (if you set up qbittorrent in your config)
     -   "remove" means that torrents are removed (default behavior)
     -   "skip" means they are disregarded (which some users might find handy to protect their private trackers prematurely, ie., before their seed targets are met)
-    -   "obsolete_tag" means that rather than being removed, the torrents are tagged. This allows other applications (such as [qbit_manage](https://github.com/StuffAnThings/qbit_manage) to monitor them and remove them once seed targets are fulfilled
+    -   "obsolete_tag" means that rather than being removed, the torrents are tagged. This allows other applications (such as [qbit_manage](https://github.com/StuffAnThings/qbit_manage) to monitor them and remove them once seed targets are fulfilled)
 -   Type: String
 -   Permissible Values: remove, skip, obsolete_tag
 -   Is Mandatory: No (Defaults to remove)
@@ -353,9 +354,10 @@ If a job has the same settings configured on job-level, the job-level settings w
 #### MAX_STRIKES
 
 -   Certain jobs wait before removing a download, until the jobs have caught the same download a given number of times. This is defined by max_strikes
--   max_strikes defines the total permissible counts a job can catch a download; catching it once more, and it will remove the ownload.
+-   max_strikes defines the number of consecutive times a download can fail before it is removed.
+-   If a download temporarily recovers the count is reset (for instance being caught twice for being slow and then picking up speed again before again being slow) 
 -   Type: Integer
--   Unit: Number of times the job catches a download
+-   Unit: Number of consecutive misses
 -   Is Mandatory: No (Defaults to 3)
 
 #### MIN_DAYS_BETWEEN_SEARCHES
