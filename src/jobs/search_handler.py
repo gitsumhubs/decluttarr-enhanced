@@ -14,6 +14,7 @@ class SearchHandler:
         self.wanted_manager = WantedManager(self.arr, self.settings)
 
     async def handle_search(self, search_type):
+        logger.debug(f"search_handler.py: Running '{search_type}' search")
         self._initialize_job(search_type)
 
         wanted_items = await self._get_initial_wanted_items(search_type)

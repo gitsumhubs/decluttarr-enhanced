@@ -6,12 +6,15 @@ from src.utils.log_setup import logger
 
 
 async def make_request(
-    method: str, endpoint: str, settings, timeout: int = 5, log_error = True, **kwargs
+    method: str, endpoint: str, settings, timeout: int = 15, log_error = True, **kwargs
 ) -> requests.Response:
     """
     A utility function to make HTTP requests (GET, POST, DELETE, PUT).
     """
     try:
+        logger.debug(
+            f"common.py/make_request: Making {method.upper()} request to {endpoint} with params={kwargs.get('params')} and headers={kwargs.get('headers')}"
+        )
         # Make the request using the method passed (get, post, etc.)
         response = await asyncio.to_thread(
             getattr(requests, method.lower()),

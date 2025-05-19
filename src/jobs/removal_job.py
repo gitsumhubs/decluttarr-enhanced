@@ -31,6 +31,8 @@ class RemovalJob(ABC):
             if self.max_strikes:
                 self.strikes_handler.all_recovered()
             return 0
+        
+        logger.debug(f"removal_job.py: Running job '{self.job_name}'")
         self.affected_items = await self._find_affected_items()
         self.affected_downloads = self.queue_manager.group_by_download_id(self.affected_items)
 
