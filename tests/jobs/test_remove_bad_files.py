@@ -36,7 +36,7 @@ def fixture_removal_job(arr):
         ("file.mkv", False),  # Good extension
         ("file.avi", False),  # Good extension
         ("file.exe", True),  # Bad extension
-        ("file.sample", True),  # Bad extension
+        ("file.jpg", True),  # Bad extension
     ],
 )
 def test_is_bad_extension(removal_job, file_name, expected_result):
@@ -47,6 +47,30 @@ def test_is_bad_extension(removal_job, file_name, expected_result):
     result = removal_job._is_bad_extension(file)  # pylint: disable=W0212
 
     # Assert
+    assert result == expected_result
+
+@pytest.mark.parametrize(
+    "name, size_bytes, expected_result",
+    [
+        ("My.Movie.2024.2160/Subfolder/sample.mkv", 100 * 1024, True),           # 100 KB, 'sample' keyword in filename
+        ("My.Movie.2024.2160/Subfolder/Sample.mkv", 100 * 1024, True),           # 100 KB, case-insensitive match
+        ("My.Movie.2024.2160/Subfolder/sample movie.mkv", 100 * 1024, True),     # 100 KB, 'sample' keyword with space
+        ("My.Movie.2024.2160/Subfolder/samplemovie.mkv", 100 * 1024, True),      # 100 KB, 'sample' keyword concatenated
+        ("My.Movie.2024.2160/Subfolder/Movie sample.mkv", 100 * 1024, True),     # 100 KB, 'sample' keyword at end
+        ("My.Movie.2024.2160/Sample/Movie.mkv", 100 * 1024, True),               # 100 KB, 'sample' keyword in folder name
+        ("My.Movie.2024.2160/sample/Movie.mkv", 100 * 1024, True),               # 100 KB, lowercase folder name
+        ("My.Movie.2024.2160/Samples/Movie.mkv", 100 * 1024, True),              # 100 KB, plural form in folder name
+        ("My.Movie.2024.2160/Big Samples/Movie.mkv", 700 * 1024 * 1024, False),  # 700 MB, large file, should NOT be flagged
+        ("My.Movie.2024.2160/Some Folder/Movie.mkv", 100 * 1024, False),         # 100 KB, no 'sample' keyword, should not flag
+    ],
+)
+def test_contains_bad_keyword(removal_job, name, size_bytes, expected_result):
+    """Test detection of bad keywords with uniform small size except a large sample file."""
+    file = {
+        "name": name,
+        "size": size_bytes,
+    }
+    result = removal_job._contains_bad_keyword(file)  # pylint: disable=W0212
     assert result == expected_result
 
 

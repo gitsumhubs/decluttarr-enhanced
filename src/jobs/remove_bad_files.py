@@ -150,6 +150,10 @@ class RemoveBadFiles(RemovalJob):
                 if self._is_bad_extension(file):
                     reasons.append(f"Bad extension: {file['file_extension']}")
 
+                # Check for bad keywords
+                if self._contains_bad_keyword(file):
+                    reasons.append("Contains bad keyword in path")
+                    
                 # Check if the file has low availability
                 if self._is_complete_partial(file):
                     reasons.append(f"Low availability: {file['availability'] * 100:.1f}%")
@@ -165,6 +169,15 @@ class RemoveBadFiles(RemovalJob):
         """Check if the file has a bad extension."""
         return file['file_extension'].lower() not in self.good_extensions
 
+    def _contains_bad_keyword(self, file):
+        """Check if the file path contains a bad keyword and is smaller than the limit."""
+        file_path = file.get("name", "").lower()
+        file_size_mb = file.get("size", 0) / 1024 / 1024
+
+        return (
+            any(keyword.lower() in file_path for keyword in self.bad_keywords)
+            and file_size_mb <= self.bad_keyword_limit
+        )
 
 
     def _is_complete_partial(self, file):

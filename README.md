@@ -117,7 +117,7 @@ jobs:
   remove_bad_files:  # This is turned on
 # remove_bad_files:  # This is turned off  
 
-## Note that this is different from docker-compose (Methods 1 and 2)
+## Note that this is different from docker-compose (where both exsmples above would be turned off; in docker, "true" or additional options are required as value next to the key)
 ```
 
 
@@ -154,7 +154,7 @@ services:
 ```
 
 
-### Docker: Specifying all settings in docker-compose
+#### Docker: Specifying all settings in docker-compose
 
 As noted above, the [recommended approach for docker](#docker-docker-compose-together-with-configyaml) setups is usage of a config.yaml, as the below approach may bloat your docker-compose and may cause you some headache to adhere to all required notation rules of compose 
 
