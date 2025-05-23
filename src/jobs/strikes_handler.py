@@ -15,11 +15,12 @@ class StrikesHandler:
 
 
     def all_recovered(self):
-        self.tracker.defective[self.job_name] = {}
-        logger.info(
-            ">>> No downloads any longer marked as %s (None in queue)",
-            self.job_name,
-        )
+        if self.tracker.defective.get(self.job_name):
+            self.tracker.defective[self.job_name] = {}
+            logger.info(
+                ">>> No downloads any longer marked as %s (None in queue)",
+                self.job_name,
+            )
 
     def _recover_downloads(self, affected_downloads):
         recovered = [
