@@ -7,19 +7,20 @@ def show_welcome(settings):
     # Show welcome message
     messages.append("🎉🎉🎉 Decluttarr - Application Started! 🎉🎉🎉")
     messages.append("-"*80)
-    messages.append("")
-    messages.append("Like this app? Thanks for giving it a ⭐️ on GitHub!")
+    # messages.append("")
+    messages.append("⭐️ Like this app?")
+    messages.append("Thanks for giving it a ⭐️ on GitHub!")
     messages.append("https://github.com/ManiMatter/decluttarr/")
 
     # Show info level tip
     if settings.general.log_level == "INFO":
-        messages.append("")
+        # messages.append("")
         messages.append("")
         messages.append("💡 Tip: More logs?")
         messages.append("If you want to know more about what's going on, switch log level to 'VERBOSE'")
 
     # Show bug report tip
-    messages.append("")
+    # messages.append("")
     messages.append("")
     messages.append("🐛 Found a bug?")
     messages.append("Before reporting bugs on GitHub, please:")
@@ -33,19 +34,16 @@ def show_welcome(settings):
 
     # Show test mode tip
     if settings.general.test_run:
-        messages.append("")
+        # messages.append("")
         messages.append("")
         messages.append("=================== IMPORTANT ====================")
-
-    if settings.general.test_run:
-        messages.append("")
-        messages.append("⚠️ ⚠️ ⚠️  TEST MODE IS ACTIVE  ⚠️ ⚠️ ⚠️")
+        messages.append("     ⚠️ ⚠️ ⚠️  TEST MODE IS ACTIVE  ⚠️ ⚠️ ⚠️")
         messages.append("Decluttarr won't actually do anything for you...")
         messages.append("You can change this via the setting 'test_run'")
-        messages.append("")
+        messages.append("==================================================")
 
-    messages.append("")
-    messages.append("-"*80)
+    # messages.append("")
+    # messages.append("-"*80)
     # Log all messages at once
     logger.info("\n".join(messages))
 

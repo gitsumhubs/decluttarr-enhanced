@@ -80,4 +80,4 @@ def get_config_as_yaml(
             if cleaned_obj:
                 config_output[key] = cleaned_obj
 
-    return yaml.dump(config_output, indent=2, default_flow_style=False, sort_keys=False)
+    return yaml.dump(config_output, indent=2, default_flow_style=False, sort_keys=False).strip()

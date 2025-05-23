@@ -30,24 +30,33 @@ add_logging_level("VERBOSE", 15)
 # Configure the default logger
 logger = logging.getLogger(__name__)
 
+def set_handler_format(log_handler, long_format = True):
+    if long_format:
+        target_format = logging.Formatter("%(asctime)s | %(levelname)-7s | %(message)s", "%Y-%m-%d %H:%M:%S")
+    else:
+        target_format = logging.Formatter("%(levelname)-7s | %(message)s")
+    log_handler.setFormatter(target_format)
+
 # Default console handler
 console_handler = logging.StreamHandler()
-console_format = logging.Formatter("%(levelname)-7s | %(message)s")
-console_handler.setFormatter(console_format)
+set_handler_format(console_handler, long_format = True)
 logger.addHandler(console_handler)
 logger.setLevel(logging.INFO)
 
 
+
 def configure_logging(settings):
     """Add a file handler and adjust log levels for all handlers."""
+    if settings.envs.in_docker:
+        set_handler_format(console_handler, long_format = False)
+
     log_file = settings.paths.logs
     log_dir = os.path.dirname(log_file)
     os.makedirs(log_dir, exist_ok=True)
 
     # File handler
     file_handler = RotatingFileHandler(log_file, maxBytes=50 * 1024 * 1024, backupCount=2)
-    file_format = logging.Formatter("%(asctime)s | %(levelname)-7s | %(message)s", "%Y-%m-%d %H:%M:%S")
-    file_handler.setFormatter(file_format)
+    set_handler_format(file_handler, long_format = True)
     logger.addHandler(file_handler)
 
     # Update log level for all handlers
