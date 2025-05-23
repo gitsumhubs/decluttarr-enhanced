@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 # Default console handler
 console_handler = logging.StreamHandler()
-console_format = logging.Formatter("%(asctime)s | %(levelname)-7s | %(message)s", "%Y-%m-%d %H:%M:%S")
+console_format = logging.Formatter("%(levelname)-7s | %(message)s")
 console_handler.setFormatter(console_format)
 logger.addHandler(console_handler)
 logger.setLevel(logging.INFO)
