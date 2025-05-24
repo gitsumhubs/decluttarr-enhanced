@@ -42,7 +42,7 @@ def show_welcome(settings):
         messages.append("You can change this via the setting 'test_run'")
         messages.append("==================================================")
 
-    # messages.append("")
+    messages.append("")
     # messages.append("-"*80)
     # Log all messages at once
     logger.info("\n".join(messages))
@@ -53,7 +53,7 @@ async def launch_steps(settings):
     if not settings.general.ssl_verification:
         warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
-    logger.info(settings)
+    logger.verbose(settings)
     show_welcome(settings)
 
     logger.info("*** Checking Instances ***")
