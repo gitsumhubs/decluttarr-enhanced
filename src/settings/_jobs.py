@@ -1,6 +1,6 @@
-from src.utils.log_setup import logger
-from src.settings._validate_data_types import validate_data_types
 from src.settings._config_as_yaml import get_config_as_yaml
+from src.settings._validate_data_types import validate_data_types
+from src.utils.log_setup import logger
 
 
 class JobParams:
@@ -33,7 +33,7 @@ class JobParams:
         self._remove_none_attributes()
 
     def _remove_none_attributes(self):
-        """Removes attributes that are None to keep the object clean."""
+        """Remove attributes that are None to keep the object clean."""
         for attr in list(vars(self)):
             if getattr(self, attr) is None:
                 delattr(self, attr)
@@ -52,16 +52,16 @@ class JobDefaults:
         job_defaults_config = config.get("job_defaults", {})
         self.max_strikes = job_defaults_config.get("max_strikes", self.max_strikes)
         self.max_concurrent_searches = job_defaults_config.get(
-            "max_concurrent_searches", self.max_concurrent_searches
+            "max_concurrent_searches", self.max_concurrent_searches,
         )
         self.min_days_between_searches = job_defaults_config.get(
-            "min_days_between_searches", self.min_days_between_searches
+            "min_days_between_searches", self.min_days_between_searches,
         )
         validate_data_types(self)
 
 
 class Jobs:
-    """Represents all jobs explicitly"""
+    """Represent all jobs explicitly."""
 
     def __init__(self, config):
         self.job_defaults = JobDefaults(config)
@@ -73,10 +73,10 @@ class Jobs:
         self.remove_bad_files = JobParams()
         self.remove_failed_downloads = JobParams()
         self.remove_failed_imports = JobParams(
-            message_patterns=self.job_defaults.message_patterns
+            message_patterns=self.job_defaults.message_patterns,
         )
         self.remove_metadata_missing = JobParams(
-            max_strikes=self.job_defaults.max_strikes
+            max_strikes=self.job_defaults.max_strikes,
         )
         self.remove_missing_files = JobParams()
         self.remove_orphans = JobParams()
@@ -102,8 +102,7 @@ class Jobs:
                 self._set_job_settings(job_name, config["jobs"][job_name])
 
     def _set_job_settings(self, job_name, job_config):
-        """Sets per-job config settings"""
-
+        """Set per-job config settings."""
         job = getattr(self, job_name, None)
         if (
             job_config is None
@@ -128,8 +127,8 @@ class Jobs:
 
         setattr(self, job_name, job)
         validate_data_types(
-            job, self.job_defaults
-        )  # Validates and applies defauls from job_defaults
+            job, self.job_defaults,
+        )  # Validates and applies defaults from job_defaults
 
     def log_status(self):
         job_strings = []
@@ -152,7 +151,7 @@ class Jobs:
         )
 
     def list_job_status(self):
-        """Returns a string showing each job and whether it's enabled or not using emojis."""
+        """Return a string showing each job and whether it's enabled or not using emojis."""
         lines = []
         for name, obj in vars(self).items():
             if hasattr(obj, "enabled"):

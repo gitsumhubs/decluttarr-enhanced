@@ -1,6 +1,8 @@
 import pytest
+
 from src.jobs.remove_orphans import RemoveOrphans
 from tests.jobs.test_utils import removal_job_fix
+
 
 @pytest.fixture(name="queue_data")
 def fixture_queue_data():
@@ -28,8 +30,9 @@ def fixture_queue_data():
             "status": "paused",
             "trackedDownloadState": "downloading",
             "statusMessages": [],
-        }
+        },
     ]
+
 
 @pytest.mark.asyncio
 async def test_find_affected_items_returns_queue(queue_data):
@@ -41,6 +44,6 @@ async def test_find_affected_items_returns_queue(queue_data):
 
     # Assert
     assert isinstance(affected_items, list)
-    assert len(affected_items) == 2
+    assert len(affected_items) == 2  # noqa: PLR2004
     assert affected_items[0]["downloadId"] == "AABBCC"
     assert affected_items[1]["downloadId"] == "112233"

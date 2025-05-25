@@ -1,5 +1,8 @@
 import os
+from pathlib import Path
+
 import yaml
+
 from src.utils.log_setup import logger
 
 CONFIG_MAPPING = {
@@ -34,7 +37,8 @@ CONFIG_MAPPING = {
 
 
 def get_user_config(settings):
-    """Checks if data is read from enviornment variables, or from yaml file.
+    """
+    Check if data is read from environment variables, or from yaml file.
 
     Reads from environment variables if in docker, unless in docker-compose "USE_CONFIG_YAML" is set to true.
     Then the config file is read.
@@ -53,7 +57,7 @@ def get_user_config(settings):
 
 
 def _parse_env_var(key: str) -> dict | list | str | int | None:
-    """Helper function to parse one setting input key"""
+    """Parse one setting input key."""
     raw_value = os.getenv(key)
     if raw_value is None:
         return None
@@ -67,21 +71,13 @@ def _parse_env_var(key: str) -> dict | list | str | int | None:
 
 
 def _load_section(keys: list[str]) -> dict:
-    """Helper function to parse one section of expected config"""
+    """Parse one section of expected config."""
     section_config = {}
     for key in keys:
         parsed = _parse_env_var(key)
         if parsed is not None:
             section_config[key.lower()] = parsed
     return section_config
-
-
-def _load_from_env() -> dict:
-    """Main function to load settings from env"""
-    config = {}
-    for section, keys in CONFIG_MAPPING.items():
-        config[section] = _load_section(keys)
-    return config
 
 
 def _load_from_env() -> dict:
@@ -100,7 +96,7 @@ def _load_from_env() -> dict:
                 parsed_value = _lowercase(parsed_value)
             except yaml.YAMLError as e:
                 logger.error(
-                    f"Failed to parse environment variable {key} as YAML:\n{e}"
+                    f"Failed to parse environment variable {key} as YAML:\n{e}",
                 )
                 parsed_value = {}
             section_config[key.lower()] = parsed_value
@@ -111,28 +107,26 @@ def _load_from_env() -> dict:
 
 
 def _lowercase(data):
-    """Translates recevied keys (for instance setting-keys of jobs) to lower case"""
+    """Translate received keys (for instance setting-keys of jobs) to lower case."""
     if isinstance(data, dict):
         return {str(k).lower(): _lowercase(v) for k, v in data.items()}
-    elif isinstance(data, list):
+    if isinstance(data, list):
         return [_lowercase(item) for item in data]
-    else:
-        # Leave strings and other types unchanged
-        return data
+    # Leave strings and other types unchanged
+    return data
 
 
 def _config_file_exists(settings):
     config_path = settings.paths.config_file
-    return os.path.exists(config_path)
+    return Path(config_path).exists()
 
 
 def _load_from_yaml_file(settings):
-    """Reads config from YAML file and returns a dict."""
+    """Read config from YAML file and returns a dict."""
     config_path = settings.paths.config_file
     try:
-        with open(config_path, "r", encoding="utf-8") as file:
-            config = yaml.safe_load(file) or {}
-        return config
+        with Path(config_path).open(encoding="utf-8") as file:
+            return yaml.safe_load(file) or {}
     except yaml.YAMLError as e:
         logger.error("Error reading YAML file: %s", e)
         return {}

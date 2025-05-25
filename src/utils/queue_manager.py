@@ -1,5 +1,5 @@
-from src.utils.log_setup import logger
 from src.utils.common import make_request
+from src.utils.log_setup import logger
 
 
 class QueueManager:
@@ -9,7 +9,8 @@ class QueueManager:
 
     async def get_queue_items(self, queue_scope):
         """
-        Retrieves queue items based on the scope.
+        Retrieve queue items based on the scope.
+
         queue_scope:
             "normal" = normal queue
             "orphans" = orphaned queue items (in full queue but not in normal queue)
@@ -24,10 +25,11 @@ class QueueManager:
         elif queue_scope == "full":
             queue_items = await self._get_queue(full_queue=True)
         else:
-            raise ValueError(f"Invalid queue_scope: {queue_scope}")
+            error = f"Invalid queue_scope: {queue_scope}"
+            raise ValueError(error)
         return queue_items
 
-    async def _get_queue(self, full_queue=False):
+    async def _get_queue(self, *, full_queue=False):
         # Step 1: Refresh the queue (now internal)
         await self._refresh_queue()
 
@@ -40,15 +42,14 @@ class QueueManager:
         # Step 4: Filter the queue based on delayed items and ignored download clients
         queue = self._ignore_delayed_queue_items(queue)
         queue = self._filter_out_ignored_download_clients(queue)
-        queue = self._add_detail_item_key(queue)
-        return queue
+        return self._add_detail_item_key(queue)
 
     def _add_detail_item_key(self, queue):
-        """Normalizes episodeID, bookID, etc so it can just be called by 'detail_item_id'"""
+        """Normalize episodeID, bookID, etc. so it can just be called by 'detail_item_id'."""
         for items in queue:
-            items["detail_item_id"] = items.get(self.arr.detail_item_id_key)  
+            items["detail_item_id"] = items.get(self.arr.detail_item_id_key)
         return queue
-                
+
     async def _refresh_queue(self):
         # Refresh the queue by making the POST request using an external make_request function
         await make_request(
@@ -85,7 +86,7 @@ class QueueManager:
         records = (
             await make_request(
                 method="GET",
-                endpoint=f"{self.arr.api_url}/queue", 
+                endpoint=f"{self.arr.api_url}/queue",
                 settings=self.settings,
                 params=params,
                 headers={"X-Api-Key": self.arr.api_key},
@@ -93,10 +94,11 @@ class QueueManager:
         ).json()
         return records["records"]
 
-    def _ignore_delayed_queue_items(self, queue):
+    @staticmethod
+    def _ignore_delayed_queue_items(queue) -> list | None:
         # Ignores delayed queue items
         if queue is None:
-            return queue
+            return None
         seen_combinations = set()
         filtered_queue = []
         for queue_item in queue:
@@ -135,7 +137,8 @@ class QueueManager:
 
         return filtered_queue
 
-    def format_queue(self, queue_items):
+    @staticmethod
+    def format_queue(queue_items) -> list | str:
         if not queue_items:
             return "empty"
 
@@ -158,7 +161,8 @@ class QueueManager:
 
         return list(formatted_dict.values())
 
-    def group_by_download_id(self, queue_items):
+    @staticmethod
+    def group_by_download_id(queue_items) -> dict:
         # Groups queue items by download ID and returns a dict where download ID is the key, and value is the list of queue items belonging to that downloadID
         # Queue item is limited to certain keys
         retain_keys = {
@@ -184,7 +188,7 @@ class QueueManager:
 
             # Filter and add default values if keys are missing
             filtered_item = {
-                key: queue_item.get(key, retain_keys.get(key, None))
+                key: queue_item.get(key, retain_keys.get(key))
                 for key in retain_keys
             }
 

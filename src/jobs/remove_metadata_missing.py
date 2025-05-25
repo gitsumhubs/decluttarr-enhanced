@@ -7,13 +7,4 @@ class RemoveMetadataMissing(RemovalJob):
 
     async def _find_affected_items(self):
         queue = await self.queue_manager.get_queue_items(queue_scope="normal")
-        affected_items = []
-
-        for item in queue:
-            if "errorMessage" in item and "status" in item:
-                if (
-                    item["status"] == "queued"
-                    and item["errorMessage"] == "qBittorrent is downloading metadata"
-                ):
-                    affected_items.append(item)
-        return affected_items
+        return [item for item in queue if "errorMessage" in item and "status" in item and (item["status"] == "queued" and item["errorMessage"] == "qBittorrent is downloading metadata")]

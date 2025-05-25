@@ -1,12 +1,16 @@
 import asyncio
-from src.settings.settings import Settings
+import signal
+import sys
+import types
 
-from src.utils.startup import launch_steps
-from src.utils.log_setup import logger
 from src.job_manager import JobManager
+from src.settings.settings import Settings
+from src.utils.log_setup import logger
+from src.utils.startup import launch_steps
 
 settings = Settings()
 job_manager = JobManager(settings)
+
 
 # # Main function
 async def main():
@@ -29,8 +33,20 @@ async def main():
 
         # Wait for the next run
         await asyncio.sleep(settings.general.timer * 60)
-    return
 
 
 if __name__ == "__main__":
+    def terminate(sigterm: signal.SIGTERM, frame: types.FrameType) -> None:  # noqa: ARG001
+        """
+        Terminate cleanly. Needed for respecting 'docker stop'.
+
+        Args:
+        ----
+            sigterm (signal.Signal): The termination signal.
+            frame: The execution frame.
+
+        """
+        logger.info("Termination signal received.")
+        sys.exit(0)
+    signal.signal(signal.SIGTERM, terminate)
     asyncio.run(main())

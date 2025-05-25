@@ -1,5 +1,6 @@
 from src.utils.log_setup import logger
 
+
 class RemovalHandler:
     def __init__(self, arr, settings, job_name):
         self.arr = arr
@@ -37,7 +38,6 @@ class RemovalHandler:
                 str(self.arr.tracker.deleted),
             )
 
-
     async def _remove_download(self, queue_item, blocklist):
         queue_id = queue_item["id"]
         logger.info(f">>> Job '{self.job_name}' triggered removal: {queue_item['title']}")
@@ -50,19 +50,18 @@ class RemovalHandler:
             for qbit in self.settings.download_clients.qbittorrent:
                 await qbit.set_tag(tags=[self.settings.general.obsolete_tag], hashes=[download_id])
 
-
     async def _get_handling_method(self, download_id, queue_item):
-        if queue_item['protocol'] != 'torrent':
-            return "remove" # handling is only implemented for torrent
+        if queue_item["protocol"] != "torrent":
+            return "remove"  # handling is only implemented for torrent
 
-        client_implemenation = await self.arr.get_download_client_implementation(queue_item['downloadClient'])
-        if client_implemenation != "QBittorrent":
-            return "remove" # handling is only implemented for qbit
+        client_implementation = await self.arr.get_download_client_implementation(queue_item["downloadClient"])
+        if client_implementation != "QBittorrent":
+            return "remove"  # handling is only implemented for qbit
 
         if len(self.settings.download_clients.qbittorrent) == 0:
-            return "remove" # qbit not configured, thus can't tag
+            return "remove"  # qbit not configured, thus can't tag
 
         if download_id in self.arr.tracker.private:
             return self.settings.general.private_tracker_handling
-        
+
         return self.settings.general.public_tracker_handling

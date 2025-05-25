@@ -11,7 +11,7 @@ _Like this app? Thanks for giving it a_ ⭐️
     - [Docker-compose with config file (recommended)](#docker-docker-compose-together-with-configyaml)
     - [Docker-compose only](#docker-specifying-all-settings-in-docker-compose)
 - [Explanation of the settings](#explanation-of-the-settings)
-  - [General](#general)
+  - [General](#general-settings)
     - [LOG_LEVEL](#log_level)
     - [TEST_RUN](#test_run)
     - [TIMER](#timer)
@@ -36,7 +36,7 @@ _Like this app? Thanks for giving it a_ ⭐️
     - [REMOVE_UNMONITORED](#remove_unmonitored)
     - [SEARCH_CUTOFF_UNMET_CONTENT](#search_unmet_cutoff_content)
     - [SEARCH_MISSING_CONTENT](#search_missing_content)
-  - [Instances](#instances)
+  - [Instances](#arr-instances)
     - [SONARR](#sonarr)
     - [RADARR](#radarr)
     - [READARR](#readarr)
@@ -64,7 +64,7 @@ Feature overview:
 -   Removing downloads that are stalled
 -   Removing downloads belonging to movies/series/albums etc. that have been marked as "unmonitored"
 -   Periodically searching for better content on movies/series/albums etc. where cutoff has not been reached yet
--   Periodcially searching for missing content that has not yet been found
+-   Periodically searching for missing content that has not yet been found
 
 
 Key behaviors:
@@ -91,7 +91,7 @@ How to run this:
     -   The feature that distinguishes private and private trackers (private_tracker_handling, public_tracker_handling) does not work
     -   Removal of bad files and <100% availability (remove_bad_files) does not work 
 -   If you see strange errors such as "found 10 / 3 times", consider turning on the setting "Reject Blocklisted Torrent Hashes While Grabbing". On nightly Radarr/Sonarr/Readarr/Lidarr/Whisparr, the option is located under settings/indexers in the advanced options of each indexer, on Prowlarr it is under settings/apps and then the advanced settings of the respective app
--   If you use qBittorrent and none of your torrents get removed and the verbose logs tell that all torrents are protected by the protected_tag even if they are not, you may be using a qBittorrent version that has problems with API calls and you may want to consider switching to a different qBit image (see https://github.com/ManiMatter/decluttarr/issues/56)
+-   If you use qBittorrent and none of your torrents get removed and the verbose logs tell that all torrents are protected by the protected_tag even if they are not, you may be using a qBittorrent version that has problems with API calls, and you may want to consider switching to a different qBit image (see https://github.com/ManiMatter/decluttarr/issues/56)
 -   Currently, “\*Arr” apps are only supported in English. Refer to issue https://github.com/ManiMatter/decluttarr/issues/132 for more details
 -   If you experience yaml issues, please check the closed issues. There are different notations, and it may very well be that the issue you found has already been solved in one of the issues. Once you figured your problem, feel free to post your yaml to help others here: https://github.com/ManiMatter/decluttarr/issues/173
 
@@ -125,13 +125,13 @@ jobs:
 ### Running in docker
 
 In docker, there are two ways how you can run decluttarr.
-The [recommendeded approach](#docker-docker-compose-together-with-configyaml) is to use a config.yaml file (similar to running the script [locally](#running-locally)).
+The [recommended approach](#docker-docker-compose-together-with-configyaml) is to use a config.yaml file (similar to running the script [locally](#running-locally)).
 Alternatively, you can put all settings [directly in your docker-compose](#docker-specifying-all-settings-in-docker-compose), which may bloat it a bit.
 
 
 #### Docker: Docker-compose together with Config.yaml
 1. Use the following input for your `docker-compose.yml`
-2. Download the config_example.yaml from the config folder (on github) and put it into your mounted folder
+2. Download the config_example.yaml from the config folder (on GitHub) and put it into your mounted folder
 3. Rename it to config.yaml and adjust the settings to your needs
 4. Run `docker-compose up -d` in the directory where the file is located to create the docker container
 
@@ -162,7 +162,7 @@ If you want to have everything in docker compose:
 1. Use the following input for your `docker-compose.yml`
 2. Tweak the settings to your needs
 3. Remove the things that are commented out (if you don't need them), or uncomment them
-4. If you face problems with yaml formats etc, please first check the open and closed issues on github, before opening new ones
+4. If you face problems with yaml formats etc., please first check the open and closed issues on GitHub, before opening new ones
 5. Run `docker-compose up -d` in the directory where the file is located to create the docker container
 
 Note: Always pull the "**latest**" version. The "dev" version is for testing only, and should only be pulled when contributing code or supporting with bug fixes
@@ -207,7 +207,7 @@ services:
       # SEARCH_MISSING_CONTENT: True
 
       # # --- OR: Jobs (with job-specific settings) ---
-      # Alternatively, you can use the below notation, which for certain jobs allows you to set additioanl parameters
+      # Alternatively, you can use the below notation, which for certain jobs allows you to set additional parameters
       # As written above, these can also be set as Job Defaults so you don't have to specify them as granular as below.
       # REMOVE_BAD_FILES: True
       # REMOVE_FAILED_DOWNLOADS: True
@@ -313,14 +313,14 @@ Configures the general behavior of the application (across all features)
 -   Allows you to configure download client names that will be skipped by decluttarr
     Note: The names provided here have to 100% match with how you have named your download clients in your *arr application(s)
 -   Type: List of strings
--   Is Mandatory: No (Defaults to [], ie. nothing ignored])
+-   Is Mandatory: No (Defaults to [], i.e. nothing ignored])
 
 #### PRIVATE_TRACKER_HANDLING / PUBLIC_TRACKER_HANDLING
 
 -   Defines what happens with private/public tracker torrents if they are flagged by a removal job
 -   Note that this only works for qbittorrent currently (if you set up qbittorrent in your config)
     -   "remove" means that torrents are removed (default behavior)
-    -   "skip" means they are disregarded (which some users might find handy to protect their private trackers prematurely, ie., before their seed targets are met)
+    -   "skip" means they are disregarded (which some users might find handy to protect their private trackers prematurely, i.e., before their seed targets are met)
     -   "obsolete_tag" means that rather than being removed, the torrents are tagged. This allows other applications (such as [qbit_manage](https://github.com/StuffAnThings/qbit_manage) to monitor them and remove them once seed targets are fulfilled)
 -   Type: String
 -   Permissible Values: remove, skip, obsolete_tag
@@ -371,10 +371,10 @@ If a job has the same settings configured on job-level, the job-level settings w
 #### MAX_CONCURRENT_SEARCHES
 
 -   Only relevant together with search_unmet_cutoff_content and search_missing_content
--   Specified how many ites concurrently on a single arr should be search for in a given iteration
+-   Specified how many ites concurrently on a single arr should be searched for in a given iteration
 -   Each arr counts separately
 -   Example: If your wanted-list has 100 entries, and you define "3" as your number, after roughly 30 searches you'll have all items on your list searched for.
--   Since the timer-setting steer how often the jobs run, if you put 10minutes there, after one hour you'll have run 6x, and thus already processed 18 searches. Long story short: No need to put a very high number here (else you'll just create unecessary traffic on your end..).
+-   Since the timer-setting steer how often the jobs run, if you put 10minutes there, after one hour you'll have run 6x, and thus already processed 18 searches. Long story short: No need to put a very high number here (else you'll just create unnecessary traffic on your end.).
 -   Type: Integer
 -   Permissible Values: Any number
 -   Is Mandatory: No (Defaults to 3)
@@ -388,12 +388,12 @@ This is the interesting section. It defines which job you want decluttarr to run
 - Steers whether files within torrents are marked as 'not download' if they match one of these conditions
   1) They are less than 100% available
   2) They are not one of the desired file types supported by the *arr apps:
-  3) They contain one of these words (case insensitive) and are smaller than 500 MB:
+  3) They contain one of these words (case-insensitive) and are smaller than 500 MB:
      - Trailer
      - Sample
 
 - If all files of a torrent are marked as 'not download' then the torrent will be removed and blacklisted
-- Note that this is only supported when qBittorrent is configured in decluttarr and it will turn on the setting 'Keep unselected files in ".unwanted" folder' in qBittorrent 
+- Note that this is only supported when qBittorrent is configured in decluttarr, and it will turn on the setting 'Keep unselected files in ".unwanted" folder' in qBittorrent 
 - Type: Boolean
 - Permissible Values: True, False
 - Is Mandatory: No (Defaults to False)
@@ -426,8 +426,8 @@ This is the interesting section. It defines which job you want decluttarr to run
 -   Permissible Values: True, False or max_strikes (int)
 -   Is Mandatory: No (Defaults to False)
 -   Note:
-      - With max_strikes you can define how many time this torrent can be caught before being removed
-      - Instead of configuring it here, you may also configure it as a default across all jobs or use the built-in defaults (see futher above under "Max_Strikes")
+      - With max_strikes you can define how many times this torrent can be caught before being removed
+      - Instead of configuring it here, you may also configure it as a default across all jobs or use the built-in defaults (see further above under "Max_Strikes")
 
 #### REMOVE_MISSING_FILES
 
@@ -450,7 +450,7 @@ This is the interesting section. It defines which job you want decluttarr to run
 
 -   Steers whether slow downloads are removed from the queue
 -   Blocklisted: Yes
--   Note: Does not apply to usenet downloads (since there users pay for certain speed, slowness should not occurr)
+-   Note: Does not apply to usenet downloads (since there users pay for certain speed, slowness should not occur)
 -   Type: Boolean or Dict
 -   Permissible Values: 
       If bool: True, False 

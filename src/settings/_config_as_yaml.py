@@ -1,5 +1,6 @@
 import yaml
 
+
 def mask_sensitive_value(value, key, sensitive_attributes):
     """Mask the value if it's in the sensitive attributes."""
     return "*****" if key in sensitive_attributes else value
@@ -40,19 +41,19 @@ def clean_object(obj, sensitive_attributes, internal_attributes, hide_internal_a
     """Clean an object (either a dict, class instance, or other types)."""
     if isinstance(obj, dict):
         return clean_dict(obj, sensitive_attributes, internal_attributes, hide_internal_attr)
-    elif hasattr(obj, "__dict__"):
+    if hasattr(obj, "__dict__"):
         return clean_dict(vars(obj), sensitive_attributes, internal_attributes, hide_internal_attr)
-    else:
-        return mask_sensitive_value(obj, "", sensitive_attributes)
+    return mask_sensitive_value(obj, "", sensitive_attributes)
 
 
 def get_config_as_yaml(
     data,
     sensitive_attributes=None,
     internal_attributes=None,
+    *,
     hide_internal_attr=True,
 ):
-    """Main function to process the configuration into YAML format."""
+    """Process the configuration into YAML format."""
     if sensitive_attributes is None:
         sensitive_attributes = set()
     if internal_attributes is None:
@@ -67,7 +68,7 @@ def get_config_as_yaml(
         # Process list-based config
         if isinstance(obj, list):
             cleaned_list = clean_list(
-                obj, sensitive_attributes, internal_attributes, hide_internal_attr
+                obj, sensitive_attributes, internal_attributes, hide_internal_attr,
             )
             if cleaned_list:
                 config_output[key] = cleaned_list
@@ -75,7 +76,7 @@ def get_config_as_yaml(
         # Process dict or class-like object config
         else:
             cleaned_obj = clean_object(
-                obj, sensitive_attributes, internal_attributes, hide_internal_attr
+                obj, sensitive_attributes, internal_attributes, hide_internal_attr,
             )
             if cleaned_obj:
                 config_output[key] = cleaned_obj

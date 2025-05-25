@@ -1,11 +1,14 @@
 from unittest.mock import MagicMock
+
 import pytest
+
 from src.jobs.remove_failed_imports import RemoveFailedImports
 from tests.jobs.test_utils import removal_job_fix
 
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "item, expected_result",
+    ("item", "expected_result"),
     [
         # Valid item scenario
         (
@@ -15,7 +18,7 @@ from tests.jobs.test_utils import removal_job_fix
                 "trackedDownloadState": "importPending",
                 "statusMessages": [{"messages": ["Import failed"]}],
             },
-            True
+            True,
         ),
         # Invalid item with wrong status
         (
@@ -25,7 +28,7 @@ from tests.jobs.test_utils import removal_job_fix
                 "trackedDownloadState": "importPending",
                 "statusMessages": [{"messages": ["Import failed"]}],
             },
-            False
+            False,
         ),
         # Invalid item with missing required fields
         (
@@ -34,7 +37,7 @@ from tests.jobs.test_utils import removal_job_fix
                 "trackedDownloadState": "importPending",
                 "statusMessages": [{"messages": ["Import failed"]}],
             },
-            False
+            False,
         ),
         # Invalid item with wrong trackedDownloadStatus
         (
@@ -44,7 +47,7 @@ from tests.jobs.test_utils import removal_job_fix
                 "trackedDownloadState": "importPending",
                 "statusMessages": [{"messages": ["Import failed"]}],
             },
-            False
+            False,
         ),
         # Invalid item with wrong trackedDownloadState
         (
@@ -54,21 +57,19 @@ from tests.jobs.test_utils import removal_job_fix
                 "trackedDownloadState": "downloaded",
                 "statusMessages": [{"messages": ["Import failed"]}],
             },
-            False
+            False,
         ),
-    ]
+    ],
 )
 async def test_is_valid_item(item, expected_result):
-    #Fix
+    # Fix
     removal_job = removal_job_fix(RemoveFailedImports)
 
     # Act
-    result = removal_job._is_valid_item(item) # pylint: disable=W0212
+    result = removal_job._is_valid_item(item)  # pylint: disable=W0212
 
     # Assert
     assert result == expected_result
-
-
 
 
 # Fixture with 3 valid items with different messages and downloadId
@@ -95,14 +96,14 @@ def fixture_queue_data():
             "trackedDownloadStatus": "warning",
             "trackedDownloadState": "importBlocked",
             "statusMessages": [{"messages": ["Import blocked due to issue C"]}],
-        }
+        },
     ]
 
 
 # Test the different patterns and check if the right downloads are selected
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "patterns, expected_download_ids, removal_messages_expected",
+    ("patterns", "expected_download_ids", "removal_messages_expected"),
     [
         (["*"], ["1", "2", "3"], True),                             # Match everything, expect removal messages
         (["Import failed*"], ["1", "2"], True),                     # Match "Import failed", expect removal messages
@@ -124,13 +125,12 @@ async def test_find_affected_items_with_patterns(queue_data, patterns, expected_
 
     # Assert
     assert isinstance(affected_items, list)
-    
+
     # Check if the correct downloadIds are in the affected items
     affected_download_ids = [item["downloadId"] for item in affected_items]
 
     # Assert the affected download IDs are as expected
     assert sorted(affected_download_ids) == sorted(expected_download_ids)
-
 
     # Check if removal messages are expected and present
     for item in affected_items:

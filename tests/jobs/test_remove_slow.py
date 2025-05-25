@@ -1,12 +1,14 @@
 from unittest.mock import AsyncMock, MagicMock
+
 import pytest
+
 from src.jobs.remove_slow import RemoveSlow
 from tests.jobs.test_utils import removal_job_fix
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "item, expected_result",
+    ("item", "expected_result"),
     [
         (
             # Valid: has downloadId, size, sizeleft, and status = "downloading"
@@ -119,17 +121,17 @@ def fixture_arr():
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "min_speed, expected_ids",
+    ("min_speed", "expected_ids"),
     [
         (0, []),  # No min download speed; all torrents pass
         (500, ["stuck"]),  # Only stuck and slow are included
         (1000, ["stuck", "slow"]),  # Same as above
         (10000, ["stuck", "slow", "medium"]),  # Only stuck and slow are below 5.0
-        (1000000, ["stuck", "slow", "medium", "fast"]), # Fast torrent included (but not importing)
+        (1000000, ["stuck", "slow", "medium", "fast"]),  # Fast torrent included (but not importing)
     ],
 )
 async def test_find_affected_items_with_varied_speeds(
-    slow_queue_data, min_speed, expected_ids, arr
+    slow_queue_data, min_speed, expected_ids, arr,
 ):
     removal_job = removal_job_fix(RemoveSlow, queue_data=slow_queue_data)
 
@@ -139,12 +141,12 @@ async def test_find_affected_items_with_varied_speeds(
     removal_job.settings = MagicMock()
     removal_job.settings.general.timer = 1  # 1 minute for speed calculation
     removal_job.arr = arr  # Inject the mocked arr object
-    removal_job._is_valid_item = MagicMock( return_value=True )  # Mock the _is_valid_item method to always return True # pylint: disable=W0212
+    removal_job._is_valid_item = MagicMock(return_value=True)  # Mock the _is_valid_item method to always return True # pylint: disable=W0212
 
     # Inject size and sizeleft into each item in the queue
     for item in slow_queue_data:
         item["size"] = item["total_size"] * 1000000  # Inject total size as 'size'
-        item["sizeleft"] = ( item["size"] - item["progress_now"] * 1000000 )  # Calculate sizeleft
+        item["sizeleft"] = (item["size"] - item["progress_now"] * 1000000)  # Calculate sizeleft
         item["status"] = "downloading"
         item["title"] = item["downloadId"]
 

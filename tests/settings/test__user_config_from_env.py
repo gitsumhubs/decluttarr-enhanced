@@ -1,8 +1,11 @@
+"""Test loading the user configuration from environment variables."""
 import os
 import textwrap
+from unittest.mock import patch
+
 import pytest
 import yaml
-from unittest.mock import patch
+
 from src.settings._user_config import _load_from_env
 
 # ---- Pytest Fixtures ----
@@ -13,7 +16,7 @@ timer_value = "10"
 ssl_verification_value = "true"
 
 # List
-ignored_download_clients_yaml  = textwrap.dedent("""
+ignored_download_clients_yaml = textwrap.dedent("""
     - emulerr
     - napster
 """).strip()
@@ -21,12 +24,12 @@ ignored_download_clients_yaml  = textwrap.dedent("""
 # Job: No settings
 remove_bad_files_yaml = ""  # empty string represents flag enabled with no config
 
-# Job: One Setting 
+# Job: One Setting
 remove_slow_yaml = textwrap.dedent("""
     - max_strikes: 3
 """).strip()
 
-# Job: Multiple Setting 
+# Job: Multiple Setting
 remove_stalled_yaml = textwrap.dedent("""
     - min_speed: 100
     - max_strikes: 3
@@ -55,6 +58,7 @@ qbit_yaml = textwrap.dedent("""
       password: "qbit_password1"
 """).strip()
 
+
 @pytest.fixture(name="env_vars")
 def fixture_env_vars():
     env = {
@@ -82,7 +86,8 @@ radarr_expected = yaml.safe_load(radarr_yaml)
 sonarr_expected = yaml.safe_load(sonarr_yaml)
 qbit_expected = yaml.safe_load(qbit_yaml)
 
-@pytest.mark.parametrize("section,key,expected", [
+
+@pytest.mark.parametrize(("section", "key", "expected"), [
     ("general", "log_level", log_level_value),
     ("general", "timer", int(timer_value)),
     ("general", "ssl_verification", True),
@@ -94,16 +99,14 @@ qbit_expected = yaml.safe_load(qbit_yaml)
     ("instances", "sonarr", sonarr_expected),
     ("download_clients", "qbittorrent", qbit_expected),
 ])
-def test_env_loading_parametrized(env_vars, section, key, expected): # pylint: disable=unused-argument
+def test_env_loading_parametrized(env_vars, section, key, expected):  # pylint: disable=unused-argument  # noqa: ARG001
     config = _load_from_env()
     assert section in config
     assert key in config[section]
     value = config[section][key]
-    
+
     if isinstance(expected, list):
         # Compare as lists
         assert value == expected
     else:
         assert value == expected
-
-

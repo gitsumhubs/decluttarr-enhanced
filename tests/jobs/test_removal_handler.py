@@ -1,9 +1,11 @@
 from unittest.mock import AsyncMock, patch
+
 import pytest
+
 from src.jobs.removal_handler import RemovalHandler
 
-
 # ---------- Fixtures ----------
+
 
 @pytest.fixture(name="mock_logger")
 def fixture_mock_logger():
@@ -46,8 +48,8 @@ def fixture_affected_downloads():
                 "status": "paused",
                 "trackedDownloadState": "downloading",
                 "statusMessages": [],
-            }
-        ]
+            },
+        ],
     }
 
 
@@ -55,7 +57,7 @@ def fixture_affected_downloads():
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "protocol, qb_config, client_impl, is_private, pub_handling, priv_handling, expected",
+    ("protocol", "qb_config", "client_impl", "is_private", "pub_handling", "priv_handling", "expected"),
     [
         ("emule",   [AsyncMock()], "MyDonkey",     None,  "remove", "remove", "remove"),
         ("torrent", [],            "QBittorrent",  None,  "remove", "remove", "remove"),
@@ -108,7 +110,7 @@ async def test_remove_downloads(
 
     if expected == "remove":
         arr.remove_queue_item.assert_awaited_once_with(
-            queue_id=item["id"], blocklist=True
+            queue_id=item["id"], blocklist=True,
         )
         assert download_id in arr.tracker.deleted
 

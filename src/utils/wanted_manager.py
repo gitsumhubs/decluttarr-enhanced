@@ -8,12 +8,12 @@ class WantedManager:
 
     async def get_wanted_items(self, missing_or_cutoff):
         """
-        Retrieves wanted items :
-            missing_or_cutoff: Drives whether missing or cutoff items are retrieved
+        Retrieve wanted items.
+
+        missing_or_cutoff: Drives whether missing or cutoff items are retrieved
         """
         record_count = await self._get_total_records(missing_or_cutoff)
-        missing_or_cutoff = await self._get_arr_records(missing_or_cutoff, record_count)
-        return missing_or_cutoff
+        return await self._get_arr_records(missing_or_cutoff, record_count)
 
     async def _get_total_records(self, missing_or_cutoff):
         # Get the total number of records from wanted
@@ -46,9 +46,8 @@ class WantedManager:
         ).json()
         return records["records"]
 
-
     async def search_items(self, detail_ids):
-        """Search items by detail IDs"""
+        """Search items by detail IDs."""
         if isinstance(detail_ids, str):
             detail_ids = [detail_ids]
 

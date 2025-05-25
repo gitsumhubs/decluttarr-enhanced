@@ -1,14 +1,16 @@
 from packaging import version
-from src.utils.common import make_request, wait_and_exit
+
 from src.settings._constants import ApiEndpoints, MinVersions
+from src.utils.common import make_request, wait_and_exit
 from src.utils.log_setup import logger
 
 
 class QbitError(Exception):
     pass
 
+
 class QbitClients(list):
-    """Represents all qBittorrent clients"""
+    """Represents all qBittorrent clients."""
 
     def __init__(self, config, settings):
         super().__init__()
@@ -19,7 +21,7 @@ class QbitClients(list):
 
         if not isinstance(qbit_config, list):
             logger.error(
-                "Invalid config format for qbittorrent clients. Expected a list."
+                "Invalid config format for qbittorrent clients. Expected a list.",
             )
             return
 
@@ -30,29 +32,29 @@ class QbitClients(list):
                 logger.error(f"Error parsing qbittorrent client config: {e}")
 
 
-
 class QbitClient:
     """Represents a single qBittorrent client."""
 
-    cookie: str = None
+    cookie: dict[str, str] = None
     version: str = None
 
     def __init__(
-        self,
-        settings,
-        base_url: str = None,
-        username: str = None,
-        password: str = None,
-        name: str = None
+            self,
+            settings,
+            base_url: str | None = None,
+            username: str | None = None,
+            password: str | None = None,
+            name: str | None = None,
     ):
         self.settings = settings
         if not base_url:
             logger.error("Skipping qBittorrent client entry: 'base_url' is required.")
-            raise ValueError("qBittorrent client must have a 'base_url'.")
+            error = "qBittorrent client must have a 'base_url'."
+            raise ValueError(error)
 
         self.base_url = base_url.rstrip("/")
-        self.api_url = self.base_url + getattr(ApiEndpoints, "qbittorrent")
-        self.min_version = getattr(MinVersions, "qbittorrent")
+        self.api_url = self.base_url + ApiEndpoints.qbittorrent
+        self.min_version = MinVersions.qbittorrent
         self.username = username
         self.password = password
         self.name = name
@@ -63,24 +65,28 @@ class QbitClient:
         self._remove_none_attributes()
 
     def _remove_none_attributes(self):
-        """Removes attributes that are None to keep the object clean."""
+        """Remove attributes that are None to keep the object clean."""
         for attr in list(vars(self)):
             if getattr(self, attr) is None:
                 delattr(self, attr)
 
-
     async def refresh_cookie(self):
         """Refresh the qBittorrent session cookie."""
+
+        def _connection_error():
+            error = "Login failed."
+            raise ConnectionError(error)
+
         try:
             endpoint = f"{self.api_url}/auth/login"
-            data = {"username": getattr(self, 'username', ''), "password": getattr(self, 'password', '')}
+            data = {"username": getattr(self, "username", ""), "password": getattr(self, "password", "")}
             headers = {"content-type": "application/x-www-form-urlencoded"}
             response = await make_request(
-                "post", endpoint, self.settings, data=data, headers=headers
+                "post", endpoint, self.settings, data=data, headers=headers,
             )
 
             if response.text == "Fails.":
-                raise ConnectionError("Login failed.")
+                _connection_error()
 
             self.cookie = {"SID": response.cookies["SID"]}
             logger.debug("qBit cookie refreshed!")
@@ -89,8 +95,6 @@ class QbitClient:
             self.cookie = {}
             raise QbitError(e) from e
 
-
-
     async def fetch_version(self):
         """Fetch the current qBittorrent version."""
         endpoint = f"{self.api_url}/app/version"
@@ -98,23 +102,20 @@ class QbitClient:
         self.version = response.text[1:]  # Remove the '_v' prefix
         logger.debug(f"qBit version for client qBittorrent: {self.version}")
 
-
     async def validate_version(self):
         """Check if the qBittorrent version meets minimum and recommended requirements."""
         min_version = self.settings.min_versions.qbittorrent
 
         if version.parse(self.version) < version.parse(min_version):
             logger.error(
-                f"Please update qBittorrent to at least version {min_version}. Current version: {self.version}"
+                f"Please update qBittorrent to at least version {min_version}. Current version: {self.version}",
             )
-            raise QbitError(
-                f"qBittorrent version {self.version} is too old. Please update."
-            )
+            error = f"qBittorrent version {self.version} is too old. Please update."
+            raise QbitError(error)
         if version.parse(self.version) < version.parse("5.0.0"):
             logger.info(
-                f"[Tip!] Consider upgrading to qBittorrent v5.0.0 or newer to reduce network overhead."
+                "[Tip!] Consider upgrading to qBittorrent v5.0.0 or newer to reduce network overhead.",
             )
-
 
     async def create_tag(self):
         """Create the protection tag in qBittorrent if it doesn't exist."""
@@ -134,34 +135,32 @@ class QbitClient:
                     cookies=self.cookie,
                 )
 
-        if (
-            self.settings.general.public_tracker_handling == "tag_as_obsolete"
-            or self.settings.general.private_tracker_handling == "tag_as_obsolete"
-        ):
-            if self.settings.general.obsolete_tag not in current_tags:
-                logger.verbose(f"Creating obsolete tag: {self.settings.general.obsolete_tag}")
-                if not self.settings.general.test_run:
-                    data = {"tags": self.settings.general.obsolete_tag}
-                    await make_request(
-                        "post",
-                        self.api_url + "/torrents/createTags",
-                        self.settings,
-                        data=data,
-                        cookies=self.cookie,
-                    )
+        if ((self.settings.general.public_tracker_handling == "tag_as_obsolete"
+             or self.settings.general.private_tracker_handling == "tag_as_obsolete")
+                and self.settings.general.obsolete_tag not in current_tags):
+            logger.verbose(f"Creating obsolete tag: {self.settings.general.obsolete_tag}")
+            if not self.settings.general.test_run:
+                data = {"tags": self.settings.general.obsolete_tag}
+                await make_request(
+                    "post",
+                    self.api_url + "/torrents/createTags",
+                    self.settings,
+                    data=data,
+                    cookies=self.cookie,
+                )
 
     async def set_unwanted_folder(self):
         """Set the 'unwanted folder' setting in qBittorrent if needed."""
         if self.settings.jobs.remove_bad_files:
             endpoint = f"{self.api_url}/app/preferences"
             response = await make_request(
-                "get", endpoint, self.settings, cookies=self.cookie
+                "get", endpoint, self.settings, cookies=self.cookie,
             )
             qbit_settings = response.json()
 
             if not qbit_settings.get("use_unwanted_folder"):
                 logger.info(
-                    "Enabling 'Keep unselected files in .unwanted folder' in qBittorrent."
+                    "Enabling 'Keep unselected files in .unwanted folder' in qBittorrent.",
                 )
                 if not self.settings.general.test_run:
                     data = {"json": '{"use_unwanted_folder": true}'}
@@ -173,39 +172,32 @@ class QbitClient:
                         cookies=self.cookie,
                     )
 
-
     async def check_qbit_reachability(self):
         """Check if the qBittorrent URL is reachable."""
         try:
             endpoint = f"{self.api_url}/auth/login"
-            data = {"username": getattr(self, 'username', ''), "password": getattr(self, 'password', '')}
+            data = {"username": getattr(self, "username", ""), "password": getattr(self, "password", "")}
             headers = {"content-type": "application/x-www-form-urlencoded"}
             await make_request(
-                "post", endpoint, self.settings, data=data, headers=headers, log_error=False
+                "post", endpoint, self.settings, data=data, headers=headers, log_error=False,
             )
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             tip = "💡 Tip: Did you specify the URL (and username/password if required) correctly?"
             logger.error(f"-- | qBittorrent\n❗️ {e}\n{tip}\n")
             wait_and_exit()
 
-
     async def check_qbit_connected(self):
         """Check if the qBittorrent is connected to internet."""
         qbit_connection_status = ((
-            await make_request(
-                "get",
-                self.api_url + "/sync/maindata",
-                self.settings,
-                cookies=self.cookie,
-            )
-        ).json())["server_state"]["connection_status"]
-        if qbit_connection_status == "disconnected":
-            return False
-        else:
-            return True
-
-
+                                      await make_request(
+                                          "get",
+                                          self.api_url + "/sync/maindata",
+                                          self.settings,
+                                          cookies=self.cookie,
+                                      )
+                                  ).json())["server_state"]["connection_status"]
+        return qbit_connection_status != "disconnected"
 
     async def setup(self):
         """Perform the qBittorrent setup by calling relevant managers."""
@@ -228,9 +220,8 @@ class QbitClient:
         await self.create_tag()
         await self.set_unwanted_folder()
 
-
     async def get_protected_and_private(self):
-        """Fetches torrents from qBittorrent and checks for protected and private status."""
+        """Fetch torrents from qBittorrent and checks for protected and private status."""
         protected_downloads = []
         private_downloads = []
 
@@ -270,11 +261,12 @@ class QbitClient:
 
     async def set_tag(self, tags, hashes):
         """
-        Sets tags to one or more torrents in qBittorrent.
+        Set tags to one or more torrents in qBittorrent.
 
         Args:
             tags (list): A list of tag names to be added.
             hashes (list): A list of torrent hashes to which the tags should be applied.
+
         """
         # Ensure hashes are provided as a string separated by '|'
         hashes_str = "|".join(hashes)
@@ -285,7 +277,7 @@ class QbitClient:
         # Prepare the data for the request
         data = {
             "hashes": hashes_str,
-            "tags": tags_str
+            "tags": tags_str,
         }
 
         # Perform the request to add the tag(s) to the torrents
@@ -294,14 +286,12 @@ class QbitClient:
             self.api_url + "/torrents/addTags",
             self.settings,
             data=data,
-            cookies=self.cookie, 
+            cookies=self.cookie,
         )
-
 
     async def get_download_progress(self, download_id):
         items = await self.get_qbit_items(download_id)
         return items[0]["completed"]
-
 
     async def get_qbit_items(self, hashes=None):
         params = None
@@ -319,7 +309,6 @@ class QbitClient:
         )
         return response.json()
 
-
     async def get_torrent_files(self, download_id):
         # this may not work if the wrong qbit
         response = await make_request(
@@ -331,8 +320,8 @@ class QbitClient:
         )
         return response.json()
 
-    async def set_torrent_file_priority(self, download_id, file_id, priority = 0):
-        data={
+    async def set_torrent_file_priority(self, download_id, file_id, priority=0):
+        data = {
             "hash": download_id.lower(),
             "id": file_id,
             "priority": priority,
@@ -344,4 +333,3 @@ class QbitClient:
             data=data,
             cookies=self.cookie,
         )
-
