@@ -18,6 +18,11 @@ class RemoveBadFiles(RemovalJob):
         ".epub", ".kepub", ".mobi", ".azw3", ".pdf",
     ]
 
+    # Archives can be handled by tools such as unpackerr:
+    archive_extensions = [
+        ".rar", ".tar", ".tgz", ".gz", ".zip", ".7z", ".bz2", ".tbz2", ".iso",
+    ]
+
     bad_keywords = ["Sample", "Trailer"] 
     bad_keyword_limit = 500 # Megabyte; do not remove items larger than that
     # fmt: on
@@ -167,7 +172,13 @@ class RemoveBadFiles(RemovalJob):
     
     def _is_bad_extension(self, file):
         """Check if the file has a bad extension."""
-        return file['file_extension'].lower() not in self.good_extensions
+        return file['file_extension'].lower() not in self.get_good_extensions()
+
+    def get_good_extensions(self):
+        extensions = list(self.good_extensions)
+        if self.job.keep_archives:
+            extensions += self.archive_extensions
+        return extensions
 
     def _contains_bad_keyword(self, file):
         """Check if the file path contains a bad keyword and is smaller than the limit."""

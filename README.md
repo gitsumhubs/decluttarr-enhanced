@@ -194,22 +194,23 @@ services:
 
       # # --- Jobs (short notation) ---
       # If you want to go with the most basic settings, you can just turn them all on:
-      # REMOVE_BAD_FILES: True
-      # REMOVE_FAILED_DOWNLOADS: True
-      # REMOVE_FAILED_IMPORTS: True
-      # REMOVE_METADATA_MISSING: True
-      # REMOVE_MISSING_FILES: True
-      # REMOVE_ORPHANS: True
-      # REMOVE_SLOW: True
-      # REMOVE_STALLED: True
-      # REMOVE_UNMONITORED: True
-      # SEARCH_BETTER_CONTENT: True
-      # SEARCH_MISSING_CONTENT: True
+      REMOVE_BAD_FILES: True
+      REMOVE_FAILED_DOWNLOADS: True
+      REMOVE_FAILED_IMPORTS: True
+      REMOVE_METADATA_MISSING: True
+      REMOVE_MISSING_FILES: True
+      REMOVE_ORPHANS: True
+      REMOVE_SLOW: True
+      REMOVE_STALLED: True
+      REMOVE_UNMONITORED: True
+      SEARCH_BETTER_CONTENT: True
+      SEARCH_MISSING_CONTENT: True
 
       # # --- OR: Jobs (with job-specific settings) ---
       # Alternatively, you can use the below notation, which for certain jobs allows you to set additioanl parameters
       # As written above, these can also be set as Job Defaults so you don't have to specify them as granular as below.
-      # REMOVE_BAD_FILES: True
+      # REMOVE_BAD_FILES: |
+      #   keep_archives: True
       # REMOVE_FAILED_DOWNLOADS: True
       # REMOVE_FAILED_IMPORTS: True
       # REMOVE_METADATA_MISSING: |
@@ -392,11 +393,15 @@ This is the interesting section. It defines which job you want decluttarr to run
      - Trailer
      - Sample
 
-- If all files of a torrent are marked as 'not download' then the torrent will be removed and blacklisted
-- Note that this is only supported when qBittorrent is configured in decluttarr and it will turn on the setting 'Keep unselected files in ".unwanted" folder' in qBittorrent 
-- Type: Boolean
-- Permissible Values: True, False
-- Is Mandatory: No (Defaults to False)
+-   If all files of a torrent are marked as 'not download' then the torrent will be removed and blacklisted
+-   Note that this is only supported when qBittorrent is configured in decluttarr and it will turn on the setting 'Keep unselected files in ".unwanted" folder' in qBittorrent 
+-   Type: Boolean or Dict
+-   Permissible Values: True, False or keep_archives (bool)
+-   Is Mandatory: No (Defaults to False)
+-   Note: 
+      - If you turn keep_archives on (default: false), packaged files (rar, zip, 7zip, etc.) are not removed
+      - This may be helpful if you use a tool such as [unpackerr](https://github.com/Unpackerr/unpackerr) that can handle it
+      - However, you may also find that these packages may contain bad/malicious files (which will not removed by decluttarr)
 
 #### REMOVE_FAILED_DOWNLOADS
 

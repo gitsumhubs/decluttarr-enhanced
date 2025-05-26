@@ -26,21 +26,28 @@ def fixture_qbit_client():
 def fixture_removal_job(arr):
     removal_job = removal_job_fix(RemoveBadFiles)
     removal_job.arr = arr
+    removal_job.job = MagicMock()
+    removal_job.job.keep_archives = False
     return removal_job
 
 
 @pytest.mark.parametrize(
-    "file_name, expected_result",
+    "file_name, expected_result, keep_archives",
     [
-        ("file.mp4", False),  # Good extension
-        ("file.mkv", False),  # Good extension
-        ("file.avi", False),  # Good extension
-        ("file.exe", True),  # Bad extension
-        ("file.jpg", True),  # Bad extension
+        ("file.mp4", False, False), # Good extension
+        ("file.mkv", False, False), # Good extension
+        ("file.avi", False, False), # Good extension
+        ("file.exe", True, False),  # Bad extension
+        ("file.jpg", True, False),  # Bad extension
+        ("file.zip", True, False),   # Archive - Don't keep archives
+        ("file.zip", False, True),  # Archive - Keep archives
     ],
 )
-def test_is_bad_extension(removal_job, file_name, expected_result):
+def test_is_bad_extension(removal_job, file_name, expected_result, keep_archives):
     """This test will verify that files with bad extensions are properly identified."""
+    # Fix
+    removal_job.job.keep_archives = keep_archives
+
     # Act
     file = {"name": file_name}  # Simulating a file object
     file["file_extension"] = os.path.splitext(file["name"])[1].lower()
@@ -72,6 +79,8 @@ def test_contains_bad_keyword(removal_job, name, size_bytes, expected_result):
     }
     result = removal_job._contains_bad_keyword(file)  # pylint: disable=W0212
     assert result == expected_result
+
+
 
 
 @pytest.mark.parametrize(
