@@ -7,6 +7,7 @@ class JobParams:
     """Represents individual job settings, with an 'enabled' flag and optional parameters."""
 
     enabled: bool = False
+    keep_archives = False
     message_patterns: list
     max_strikes: int
     min_speed: int
@@ -16,6 +17,7 @@ class JobParams:
     def __init__(
         self,
         enabled=None,
+        keep_archives=None,
         message_patterns=None,
         max_strikes=None,
         min_speed=None,
@@ -23,6 +25,7 @@ class JobParams:
         min_days_between_searches=None,
     ):
         self.enabled = enabled
+        self.keep_archives = keep_archives
         self.message_patterns = message_patterns
         self.max_strikes = max_strikes
         self.min_speed = min_speed
@@ -42,6 +45,7 @@ class JobParams:
 class JobDefaults:
     """Represents default job settings."""
 
+    keep_archives: bool = False
     max_strikes: int = 3
     max_concurrent_searches: int = 3
     min_days_between_searches: int = 7
@@ -70,7 +74,9 @@ class Jobs:
         del self.job_defaults
 
     def _set_job_defaults(self):
-        self.remove_bad_files = JobParams()
+        self.remove_bad_files = JobParams(
+            keep_archives=self.job_defaults.keep_archives
+        )
         self.remove_failed_downloads = JobParams()
         self.remove_failed_imports = JobParams(
             message_patterns=self.job_defaults.message_patterns

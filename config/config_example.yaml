@@ -16,6 +16,7 @@ job_defaults:
 
 jobs:
   remove_bad_files:
+    # keep_archives: true
   remove_failed_downloads:
   remove_failed_imports:
     message_patterns:
