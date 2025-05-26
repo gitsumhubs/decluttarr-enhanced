@@ -20,8 +20,9 @@ class RemovalJob(ABC):
         self.settings = settings
         self.job_name = job_name
         self.job = getattr(self.settings.jobs, self.job_name)
+        self.max_strikes = getattr(self.job, "max_strikes", 0)
         self.queue_manager = QueueManager(self.arr, self.settings)
-        self.strikes_handler = StrikesHandler( job_name=self.job_name, arr=self.arr, max_strikes=self.max_strikes, )
+        self.strikes_handler = StrikesHandler(job_name=self.job_name, arr=self.arr, max_strikes=self.max_strikes)
 
 
     async def run(self):
