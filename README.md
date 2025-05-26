@@ -61,10 +61,10 @@ Feature overview:
 -   Removing downloads that are missing files (remove_missing_files)
 -   Removing downloads belonging to movies/series/albums/etc that have been deleted since the download was started (remove_orphans)
 -   Removing downloads that are repeatedly have been found to be slow (remove_slow)
--   Removing downloads that are stalled
--   Removing downloads belonging to movies/series/albums etc. that have been marked as "unmonitored"
--   Periodically searching for better content on movies/series/albums etc. where cutoff has not been reached yet
--   Periodcially searching for missing content that has not yet been found
+-   Removing downloads that are stalled (remove_stalled)
+-   Removing downloads belonging to movies/series/albums etc. that have been marked as "unmonitored" (remove_unmonitored)
+-   Periodically searching for better content on movies/series/albums etc. where cutoff has not been reached yet (search_cutoff_unmet_content)
+-   Periodcially searching for missing content that has not yet been found (search_missing_content)
 
 
 Key behaviors:
