@@ -55,6 +55,6 @@ class DetailItemKey:
 class DetailItemSearchCommand:
     radarr = "MoviesSearch"
     sonarr = "EpisodeSearch"
-    lidarr = "BookSearch"
+    lidarr = "AlbumSearch"
     readarr = "BookSearch"
     whisparr = None
