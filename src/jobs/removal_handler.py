@@ -46,7 +46,7 @@ class RemovalHandler:
     async def _tag_as_obsolete(self, queue_item, download_id):
         logger.info(f">>> Job'{self.job_name}' triggered obsolete-tagging: {queue_item['title']}")
         for qbit in self.settings.download_clients.qbittorrent:
-                await qbit.set_tag(tags=[self.settings.general.obsolete_tag], hashes=[download_id])
+            await qbit.set_tag(tags=[self.settings.general.obsolete_tag], hashes=[download_id])
 
 
     async def _get_handling_method(self, download_id, queue_item):
@@ -62,5 +62,5 @@ class RemovalHandler:
 
         if download_id in self.arr.tracker.private:
             return self.settings.general.private_tracker_handling
-        
+
         return self.settings.general.public_tracker_handling

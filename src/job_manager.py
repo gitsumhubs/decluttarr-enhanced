@@ -68,6 +68,7 @@ class JobManager:
             )
             return True
         else:
+            self.arr.tracker.reset_trackers()
             logger.verbose(">>> Queue is empty.")
             return False
 

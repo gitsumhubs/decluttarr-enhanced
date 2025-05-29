@@ -21,32 +21,24 @@ class RemovalJob(ABC):
         self.settings = settings
         self.job_name = job_name
         self.job = getattr(self.settings.jobs, self.job_name)
-        self.max_strikes = getattr(self.job, "max_strikes", 0)
         self.queue_manager = QueueManager(self.arr, self.settings)
-        self.strikes_handler = StrikesHandler(job_name=self.job_name, arr=self.arr, max_strikes=self.max_strikes)
-
 
     async def run(self):
         if not self.job.enabled:
             return 0
         logger.debug(f"removal_job.py/run: Launching job '{self.job_name}', and checking if any items in {self.queue_scope} queue.")
         self.queue = await self.queue_manager.get_queue_items(queue_scope=self.queue_scope)
-    
+
         # Handle empty queue
         if not self.queue:
-            if self.max_strikes:
-                self.strikes_handler.all_recovered()
             return 0
-         
+
         self.affected_items = await self._find_affected_items()
         self.affected_downloads = self.queue_manager.group_by_download_id(self.affected_items)
 
         # -- Checks --
         self._ignore_protected()
-
-        self.max_strikes = getattr(self.job, "max_strikes", None)
-        if self.max_strikes:
-            self.affected_downloads = self.strikes_handler.check_permitted_strikes(self.affected_downloads)
+        self._check_strikes_handler()
 
         # -- Removal --
         await RemovalHandler(
@@ -56,6 +48,12 @@ class RemovalJob(ABC):
             ).remove_downloads(self.affected_downloads, self.blocklist)
 
         return len(self.affected_downloads)
+
+    def _check_strikes_handler(self):
+        max_strikes = getattr(self.job, "max_strikes", None)
+        if max_strikes:
+            strikes_handler = StrikesHandler(job_name=self.job_name, arr=self.arr, max_strikes=max_strikes)
+            self.affected_downloads = strikes_handler.check_permitted_strikes(self.affected_downloads)
 
     def _ignore_protected(self):
         """

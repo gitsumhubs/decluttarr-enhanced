@@ -22,6 +22,17 @@ class Tracker:
         self.deleted = []
         self.extension_checked = []
 
+    def reset(self) -> None:
+        for attr in (
+            self.protected,
+            self.private,
+            self.defective,
+            self.download_progress,
+            self.deleted,
+            self.extension_checked,
+        ):
+            attr.clear()
+
     async def refresh_private_and_protected(self, settings):
         protected_downloads = []
         private_downloads = []
@@ -65,7 +76,7 @@ class Instances:
                         "detail_item_id_key",
                         "detail_item_ids_key",
                         "detail_item_search_command",
-                    }     
+                    }
 
         outputs = []
         for arr_type in ["sonarr", "radarr", "readarr", "lidarr", "whisparr"]:
@@ -151,8 +162,8 @@ class ArrInstance:
         self.detail_item_key = getattr(DetailItemKey, arr_type)
         self.detail_item_id_key = self.detail_item_key + "Id"
         self.detail_item_ids_key = self.detail_item_key + "Ids"
-        self.detail_item_search_command = getattr(DetailItemSearchCommand, arr_type) 
-        
+        self.detail_item_search_command = getattr(DetailItemSearchCommand, arr_type)
+
     async def _check_ui_language(self):
         """Check if the UI language is set to English."""
         endpoint = self.api_url + "/config/ui"
