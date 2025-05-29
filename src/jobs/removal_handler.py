@@ -9,7 +9,7 @@ class RemovalHandler:
     async def remove_downloads(self, affected_downloads, blocklist):
         for download_id in list(affected_downloads.keys()):
             logger.debug(
-                "remove_download/deleted_downloads.dict IN: %s",
+                "removal_handler.py/remove_downloads/arr.tracker.deleted IN: %s",
                 str(self.arr.tracker.deleted),
             )
 
@@ -33,7 +33,7 @@ class RemovalHandler:
             self.arr.tracker.deleted.append(download_id)
 
             logger.debug(
-                "remove_download/arr_instance.tracker.deleted OUT: %s",
+                "removal_handler.py/remove_downloads/arr.tracker.deleted OUT: %s",
                 str(self.arr.tracker.deleted),
             )
 

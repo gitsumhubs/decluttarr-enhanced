@@ -11,7 +11,7 @@ def sanitize_kwargs(data):
     if isinstance(data, dict):
         redacted = {}
         for key, value in data.items():
-            if key.lower() in {"username", "password", "x-api-key"} and value:
+            if key.lower() in {"username", "password", "x-api-key", "cookies"} and value:
                 redacted[key] = "[**redacted**]"
             else:
                 redacted[key] = sanitize_kwargs(value)

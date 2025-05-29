@@ -1,3 +1,4 @@
+import logging
 from src.utils.log_setup import logger
 from src.utils.common import make_request
 
@@ -25,6 +26,8 @@ class QueueManager:
             queue_items = await self._get_queue(full_queue=True)
         else:
             raise ValueError(f"Invalid queue_scope: {queue_scope}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("queue_manager.py/get_queue_items/queue (%s): %s", queue_scope, self.format_queue(queue_items))
         return queue_items
 
     async def _get_queue(self, full_queue=False):
@@ -151,9 +154,9 @@ class QueueManager:
                 formatted_dict[download_id] = {
                     "downloadId": download_id,
                     "downloadTitle": queue_item.get("title"),
-                    "IDs": [item_id],
                     "protocol": [queue_item.get("protocol")],
                     "status": [queue_item.get("status")],
+                    "IDs": [item_id],
                 }
 
         return list(formatted_dict.values())
