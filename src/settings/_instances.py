@@ -195,6 +195,7 @@ class ArrInstance:
     async def _check_reachability(self):
         """Check if ARR instance is reachable."""
         try:
+            logger.debug("_instances.py/_check_reachability: Checking if arr instance is reachable")
             endpoint = self.api_url + "/system/status"
             headers = {"X-Api-Key": self.api_key}
             response = await make_request(
@@ -237,6 +238,7 @@ class ArrInstance:
 
     async def get_download_client_implementation(self, download_client_name):
         """Fetch download client information and return the implementation value."""
+        logger.debug("_instances.py/get_download_client_implementation: Checking type of download client type by download client name")
         endpoint = self.api_url + "/downloadclient"
         headers = {"X-Api-Key": self.api_key}
 
@@ -265,6 +267,7 @@ class ArrInstance:
         Returns:
             bool: Returns True if the removal was successful, False otherwise.
         """
+        logger.debug(f"_instances.py/remove_queue_item: Removing queue item, blocklist: {blocklist}")
         endpoint = f"{self.api_url}/queue/{queue_id}"
         headers = {"X-Api-Key": self.api_key}
         json_payload = {"removeFromClient": True, "blocklist": blocklist}
@@ -282,6 +285,7 @@ class ArrInstance:
 
     async def is_monitored(self, detail_id):
         """Check if detail item (like a book, series, etc) is monitored."""
+        logger.debug(f"_instances.py/is_monitored: Checking if item is monitored")
         endpoint = f"{self.api_url}/{self.detail_item_key}/{detail_id}"
         headers = {"X-Api-Key": self.api_key}
 

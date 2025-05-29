@@ -1,13 +1,6 @@
 from unittest.mock import AsyncMock, MagicMock
 import pytest
 from src.jobs.remove_unmonitored import RemoveUnmonitored
-from tests.jobs.test_utils import removal_job_fix
-
-@pytest.fixture(name="arr")
-def fixture_arr():
-    mock = MagicMock()
-    mock.is_monitored = AsyncMock()
-    return mock
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
@@ -60,15 +53,13 @@ def fixture_arr():
         ),
     ]
 )
-async def test_find_affected_items(queue_data, monitored_ids, expected_download_ids, arr):
-    # Patch arr mock with side_effect
-    async def mock_is_monitored(detail_item_id):
-        return monitored_ids[detail_item_id]
-
-    arr.is_monitored = AsyncMock(side_effect=mock_is_monitored)
+async def test_find_affected_items(queue_data, monitored_ids, expected_download_ids):
     # Arrange
-    removal_job = removal_job_fix(RemoveUnmonitored, queue_data=queue_data)
-    removal_job.arr = arr  # Inject the mocked arr object
+    arr = MagicMock()
+    arr.is_monitored = AsyncMock(side_effect=lambda id_: monitored_ids[id_])
+    
+    removal_job = RemoveUnmonitored(arr=arr, settings=MagicMock(), job_name="test")
+    removal_job.queue = queue_data
 
     # Act
     affected_items = await removal_job._find_affected_items()  # pylint: disable=W0212

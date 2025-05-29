@@ -1,8 +1,7 @@
 from unittest.mock import MagicMock, AsyncMock
+import os
 import pytest
 from src.jobs.remove_bad_files import RemoveBadFiles
-from tests.jobs.test_utils import removal_job_fix
-import os
 
 # Fixture for arr mock
 @pytest.fixture(name="arr")
@@ -24,7 +23,7 @@ def fixture_qbit_client():
 
 @pytest.fixture(name="removal_job")
 def fixture_removal_job(arr):
-    removal_job = removal_job_fix(RemoveBadFiles)
+    removal_job = RemoveBadFiles(arr=arr, settings=MagicMock(), job_name="test")
     removal_job.arr = arr
     removal_job.job = MagicMock()
     removal_job.job.keep_archives = False
@@ -193,9 +192,9 @@ async def test_get_items_to_process(qbit_item, expected_processed, removal_job, 
     arr.tracker.extension_checked = {"checked-hash"}
 
     # Act
-    processed_items = removal_job._get_items_to_process(
+    processed_items = removal_job._get_items_to_process( # pylint: disable=W0212
         [qbit_item]
-    )  # pylint: disable=W0212
+    )  
 
     # Extract the hash from the processed items
     processed_hashes = [item["hash"] for item in processed_items]

@@ -35,6 +35,7 @@ def fixture_queue_data():
 async def test_find_affected_items_returns_queue(queue_data):
     # Fix
     removal_job = removal_job_fix(RemoveOrphans, queue_data=queue_data)
+    removal_job.queue = queue_data
 
     # Act
     affected_items = await removal_job._find_affected_items()   # pylint: disable=W0212

@@ -1,7 +1,6 @@
 from unittest.mock import MagicMock
 import pytest
 from src.jobs.remove_failed_imports import RemoveFailedImports
-from tests.jobs.test_utils import removal_job_fix
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
@@ -60,7 +59,7 @@ from tests.jobs.test_utils import removal_job_fix
 )
 async def test_is_valid_item(item, expected_result):
     #Fix
-    removal_job = removal_job_fix(RemoveFailedImports)
+    removal_job = RemoveFailedImports(arr=MagicMock(), settings=MagicMock(), job_name="test")
 
     # Act
     result = removal_job._is_valid_item(item) # pylint: disable=W0212
@@ -113,7 +112,8 @@ def fixture_queue_data():
 )
 async def test_find_affected_items_with_patterns(queue_data, patterns, expected_download_ids, removal_messages_expected):
     # Arrange
-    removal_job = removal_job_fix(RemoveFailedImports, queue_data=queue_data)
+    removal_job = RemoveFailedImports(arr=MagicMock(), settings=MagicMock(),job_name="test")
+    removal_job.queue = queue_data
 
     # Mock the job settings for message patterns
     removal_job.job = MagicMock()

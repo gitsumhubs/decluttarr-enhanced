@@ -1,6 +1,6 @@
 import pytest
+from unittest.mock import MagicMock
 from src.jobs.remove_missing_files import RemoveMissingFiles
-from tests.jobs.test_utils import removal_job_fix
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
@@ -66,7 +66,8 @@ from tests.jobs.test_utils import removal_job_fix
 )
 async def test_find_affected_items(queue_data, expected_download_ids):
     # Arrange
-    removal_job = removal_job_fix(RemoveMissingFiles, queue_data=queue_data)
+    removal_job = RemoveMissingFiles(arr=MagicMock(), settings=MagicMock(),job_name="test")
+    removal_job.queue = queue_data
 
     # Act
     affected_items = await removal_job._find_affected_items()  # pylint: disable=W0212

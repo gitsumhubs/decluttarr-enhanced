@@ -7,11 +7,10 @@ class RemoveSlow(RemovalJob):
     blocklist = True
 
     async def _find_affected_items(self):
-        queue = await self.queue_manager.get_queue_items(queue_scope=self.queue_scope)
         affected_items = []
         checked_ids = set()
 
-        for item in queue:
+        for item in self.queue:
             if not self._is_valid_item(item):
                 continue
 

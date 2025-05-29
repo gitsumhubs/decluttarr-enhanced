@@ -5,18 +5,16 @@ class RemoveUnmonitored(RemovalJob):
     blocklist = False
 
     async def _find_affected_items(self):
-        queue = await self.queue_manager.get_queue_items(queue_scope="normal")
-
         # First pass: Check if items are monitored
         monitored_download_ids = []
-        for item in queue:
+        for item in self.queue:
             detail_item_id = item["detail_item_id"]
             if await self.arr.is_monitored(detail_item_id):
                 monitored_download_ids.append(item["downloadId"])
 
         # Second pass: Append queue items none that depends on download id is monitored
         affected_items = []
-        for queue_item in queue:
+        for queue_item in self.queue:
             if queue_item["downloadId"] not in monitored_download_ids:
                 affected_items.append(
                     queue_item

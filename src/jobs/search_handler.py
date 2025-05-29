@@ -17,10 +17,12 @@ class SearchHandler:
         logger.debug(f"search_handler.py: Running '{search_type}' search")
         self._initialize_job(search_type)
 
+        logger.debug(f"search_handler.py/handle_search: Getting the list of wanted items ({search_type})")
         wanted_items = await self._get_initial_wanted_items(search_type)
         if not wanted_items:
             return
-
+  
+        logger.debug(f"search_handler.py/handle_search: Getting list of queue items to only search for items that are not already downloading.")
         queue = await QueueManager(self.arr, self.settings).get_queue_items(
             queue_scope="normal"
         )
@@ -29,6 +31,7 @@ class SearchHandler:
             return
 
         await self._log_items(wanted_items, search_type)
+        logger.debug(f"search_handler.py/handle_search: Triggering search for wanted items ({search_type})")
         await self._trigger_search(wanted_items)
 
     def _initialize_job(self, search_type):
@@ -101,6 +104,7 @@ class SearchHandler:
                 logger.verbose(f">>> - {title}")
 
             elif self.arr.arr_type == "sonarr":
+                logger.debug("search_handler.py/_log_items: Getting series information for better display in output")
                 series = await self.arr.get_series()
                 series_title = next(
                     (s["title"] for s in series if s["id"] == item.get("seriesId")),

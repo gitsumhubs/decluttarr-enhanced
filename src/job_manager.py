@@ -58,6 +58,7 @@ class JobManager:
             await SearchHandler(self.arr, self.settings).handle_search("cutoff")
 
     async def _queue_has_items(self):
+        logger.debug(f"job_manager.py/_queue_has_items (Before any removal jobs): Checking if any items in full queue")
         queue_manager = QueueManager(self.arr, self.settings)
         full_queue = await queue_manager.get_queue_items("full")
         if full_queue:
@@ -72,6 +73,7 @@ class JobManager:
 
     async def _qbit_connected(self):
         for qbit in self.settings.download_clients.qbittorrent:
+            logger.debug(f"job_manager.py/_queue_has_items (Before any removal jobs): Checking if qbit is connected to the internet")
             # Check if any client is disconnected
             if not await qbit.check_qbit_connected():
                 logger.warning(

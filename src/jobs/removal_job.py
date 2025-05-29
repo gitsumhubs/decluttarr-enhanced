@@ -13,6 +13,7 @@ class RemovalJob(ABC):
     affected_downloads = None
     job = None
     max_strikes = None
+    queue = []
 
     # Default class attributes (can be overridden in subclasses)
     def __init__(self, arr, settings, job_name):
@@ -28,12 +29,15 @@ class RemovalJob(ABC):
     async def run(self):
         if not self.job.enabled:
             return 0
-        if await self.is_queue_empty(self.job_name, self.queue_scope):
+        logger.debug(f"removal_job.py/run: Launching job '{self.job_name}', and checking if any items in {self.queue_scope} queue.")
+        self.queue = await self.queue_manager.get_queue_items(queue_scope=self.queue_scope)
+    
+        # Handle empty queue
+        if not self.queue:
             if self.max_strikes:
                 self.strikes_handler.all_recovered()
             return 0
-        
-        logger.debug(f"removal_job.py: Running job '{self.job_name}'")
+         
         self.affected_items = await self._find_affected_items()
         self.affected_downloads = self.queue_manager.group_by_download_id(self.affected_items)
 
@@ -52,21 +56,6 @@ class RemovalJob(ABC):
             ).remove_downloads(self.affected_downloads, self.blocklist)
 
         return len(self.affected_downloads)
-
-
-
-    async def is_queue_empty(self, job_name, queue_scope="normal"):
-        # Check if queue empty
-        queue_items = await self.queue_manager.get_queue_items(queue_scope)
-        logger.debug(
-            f"{job_name}/queue IN: %s",
-            self.queue_manager.format_queue(queue_items),
-        )
-        # Early exit if no queue
-        if not queue_items:
-            return True
-        return False
-
 
     def _ignore_protected(self):
         """

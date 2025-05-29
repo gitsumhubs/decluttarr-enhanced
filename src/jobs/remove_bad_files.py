@@ -28,10 +28,8 @@ class RemoveBadFiles(RemovalJob):
     # fmt: on
 
     async def _find_affected_items(self):
-        queue = await self.queue_manager.get_queue_items(queue_scope="normal")
-
         # Get in-scope download IDs
-        result = self._group_download_ids_by_client(queue)
+        result = self._group_download_ids_by_client()
 
         affected_items = []
         for download_client, info in result.items():
@@ -39,17 +37,17 @@ class RemoveBadFiles(RemovalJob):
             download_ids = info["download_ids"]
 
             if download_client_type == "qbittorrent":
-                client_items = await self._handle_qbit(download_client, download_ids, queue)
+                client_items = await self._handle_qbit(download_client, download_ids)
                 affected_items.extend(client_items)
         return affected_items
 
 
-    def _group_download_ids_by_client(self, queue):
+    def _group_download_ids_by_client(self):
         """Group all relevant download IDs by download client.
         Limited to qbittorrent currently, as no other download clients implemented"""
         result = {}
 
-        for item in queue:
+        for item in self.queue:
             download_client_name = item.get("downloadClient")
             if not download_client_name:
                 continue
@@ -70,7 +68,7 @@ class RemoveBadFiles(RemovalJob):
         return result
 
 
-    async def _handle_qbit(self, qbit_client, hashes, queue):
+    async def _handle_qbit(self, qbit_client, hashes):
         """Handle qBittorrent-specific logic for marking files as 'Do Not Download'."""
         affected_items = []
         qbit_items = await qbit_client.get_qbit_items(hashes=hashes)
@@ -89,7 +87,7 @@ class RemoveBadFiles(RemovalJob):
 
             if self._all_files_stopped(torrent_files, stoppable_files):
                 logger.verbose(">>> All files in this torrent have been marked as 'Do not Download'.  Removing torrent.")
-                affected_items.extend(self._match_queue_items(queue, qbit_item["hash"]))
+                affected_items.extend(self._match_queue_items(qbit_item["hash"]))
 
         return affected_items
 
@@ -134,10 +132,10 @@ class RemoveBadFiles(RemovalJob):
         """Check if no files remain with download priority."""
         return all(f["priority"] == 0 for f in torrent_files)
 
-    def _match_queue_items(self, queue, download_hash):
+    def _match_queue_items(self, download_hash):
         """Find matching queue item(s) by downloadId (uppercase)."""
         return [
-            item for item in queue
+            item for item in self.queue
             if item["downloadId"] == download_hash.upper()
         ]
 
@@ -208,10 +206,10 @@ class RemoveBadFiles(RemovalJob):
         stoppable_file_indexes= {file[0]["index"] for file in stoppable_files}
         return all(f["priority"] == 0 or f["index"] in stoppable_file_indexes for f in torrent_files)
 
-    def _match_queue_items(self, queue, download_hash):
+    def _match_queue_items(self, download_hash):
         """Find matching queue item(s) by downloadId (uppercase)."""
         return [
-            item for item in queue
+            item for item in self.queue
             if item["downloadId"].upper() == download_hash.upper()
         ]
 

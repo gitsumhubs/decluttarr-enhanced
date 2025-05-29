@@ -1,5 +1,5 @@
-import pytest
 from unittest.mock import MagicMock
+import pytest
 from src.jobs.strikes_handler import StrikesHandler
 
 @pytest.mark.parametrize(

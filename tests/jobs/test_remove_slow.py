@@ -1,7 +1,6 @@
 from unittest.mock import AsyncMock, MagicMock
 import pytest
 from src.jobs.remove_slow import RemoveSlow
-from tests.jobs.test_utils import removal_job_fix
 
 
 @pytest.mark.asyncio
@@ -57,13 +56,18 @@ from tests.jobs.test_utils import removal_job_fix
     ],
 )
 async def test_is_valid_item(item, expected_result):
-    removal_job = removal_job_fix(RemoveSlow)
+    # Arrange
+    removal_job = RemoveSlow(arr=MagicMock(), settings=MagicMock(),job_name="test")
+
+    # Act
     result = removal_job._is_valid_item(item)  # pylint: disable=W0212
+    
+    # Assert
     assert result == expected_result
 
 
-@pytest.fixture(name="slow_queue_data")
-def fixture_slow_queue_data():
+@pytest.fixture(name="queue_data")
+def fixture_queue_data():
     return [
         {
             "downloadId": "usenet",
@@ -129,9 +133,11 @@ def fixture_arr():
     ],
 )
 async def test_find_affected_items_with_varied_speeds(
-    slow_queue_data, min_speed, expected_ids, arr
+    queue_data, min_speed, expected_ids, arr
 ):
-    removal_job = removal_job_fix(RemoveSlow, queue_data=slow_queue_data)
+    # Arrange
+    removal_job = RemoveSlow(arr=MagicMock(), settings=MagicMock(),job_name="test")
+    removal_job.queue = queue_data
 
     # Set up job and timer
     removal_job.job = MagicMock()
@@ -140,9 +146,9 @@ async def test_find_affected_items_with_varied_speeds(
     removal_job.settings.general.timer = 1  # 1 minute for speed calculation
     removal_job.arr = arr  # Inject the mocked arr object
     removal_job._is_valid_item = MagicMock( return_value=True )  # Mock the _is_valid_item method to always return True # pylint: disable=W0212
-
+    
     # Inject size and sizeleft into each item in the queue
-    for item in slow_queue_data:
+    for item in queue_data:
         item["size"] = item["total_size"] * 1000000  # Inject total size as 'size'
         item["sizeleft"] = ( item["size"] - item["progress_now"] * 1000000 )  # Calculate sizeleft
         item["status"] = "downloading"
@@ -151,13 +157,12 @@ async def test_find_affected_items_with_varied_speeds(
     # Mock the download progress in `arr.tracker.download_progress`
     removal_job.arr.tracker.download_progress = {
         item["downloadId"]: item["progress_previous"] * 1000000
-        for item in slow_queue_data
+        for item in queue_data
     }
 
-    # Call the method we're testing
+    
+    # Act
     affected_items = await removal_job._find_affected_items()  # pylint: disable=W0212
-
-    # Extract case identifiers of affected items
     affected_ids = [item["downloadId"] for item in affected_items]
 
     # Assert that the affected cases match the expected ones

@@ -1,6 +1,6 @@
+from unittest.mock import MagicMock
 import pytest
 from src.jobs.remove_failed_downloads import RemoveFailedDownloads
-from tests.jobs.test_utils import removal_job_fix
 
 # Test to check if items with "failed" status are included in affected items with parameterized data
 @pytest.mark.asyncio
@@ -34,7 +34,8 @@ from tests.jobs.test_utils import removal_job_fix
 )
 async def test_find_affected_items(queue_data, expected_download_ids):
     # Arrange
-    removal_job = removal_job_fix(RemoveFailedDownloads, queue_data=queue_data)
+    removal_job = RemoveFailedDownloads(arr=MagicMock(), settings=MagicMock(), job_name="test")
+    removal_job.queue = queue_data
 
     # Act
     affected_items = await removal_job._find_affected_items()   # pylint: disable=W0212

@@ -72,6 +72,7 @@ class QbitClient:
     async def refresh_cookie(self):
         """Refresh the qBittorrent session cookie."""
         try:
+            logger.debug("_download_clients_qBit.py/refresh_cookie: Refreshing qBit cookie")
             endpoint = f"{self.api_url}/auth/login"
             data = {"username": getattr(self, 'username', ''), "password": getattr(self, 'password', '')}
             headers = {"content-type": "application/x-www-form-urlencoded"}
@@ -83,7 +84,6 @@ class QbitClient:
                 raise ConnectionError("Login failed.")
 
             self.cookie = {"SID": response.cookies["SID"]}
-            logger.debug("qBit cookie refreshed!")
         except Exception as e:
             logger.error(f"Error refreshing qBit cookie: {e}")
             self.cookie = {}
@@ -93,10 +93,11 @@ class QbitClient:
 
     async def fetch_version(self):
         """Fetch the current qBittorrent version."""
+        logger.debug("_download_clients_qBit.py/fetch_version: Getting qBit Version")
         endpoint = f"{self.api_url}/app/version"
         response = await make_request("get", endpoint, self.settings, cookies=self.cookie)
         self.version = response.text[1:]  # Remove the '_v' prefix
-        logger.debug(f"qBit version for client qBittorrent: {self.version}")
+        logger.debug(f"_download_clients_qBit.py/fetch_version: qBit version={self.version}")
 
 
     async def validate_version(self):
@@ -115,16 +116,16 @@ class QbitClient:
                 f"[Tip!] Consider upgrading to qBittorrent v5.0.0 or newer to reduce network overhead."
             )
 
-
-    async def create_tag(self):
-        """Create the protection tag in qBittorrent if it doesn't exist."""
+    async def create_tag(self, tag: str):
+        """Ensure a tag exists in qBittorrent; create it if it doesn't."""
+        logger.debug("_download_clients_qBit.py/create_tag: Checking if tag '{tag}' exists (and creating it if not)")
         url = f"{self.api_url}/torrents/tags"
         response = await make_request("get", url, self.settings, cookies=self.cookie)
-
         current_tags = response.json()
-        if self.settings.general.protected_tag not in current_tags:
-            logger.verbose(f"Creating protection tag: {self.settings.general.protected_tag}")
-            data = {"tags": self.settings.general.protected_tag}
+
+        if tag not in current_tags:
+            logger.verbose(f"Creating tag: {tag}")
+            data = {"tags": tag}
             await make_request(
                 "post",
                 self.api_url + "/torrents/createTags",
@@ -133,24 +134,20 @@ class QbitClient:
                 cookies=self.cookie,
             )
 
+    async def create_required_tags(self):
+        """Ensure protection and obsolete tags exist in qBittorrent if needed."""
+        await self.create_tag(self.settings.general.protected_tag)
+
         if (
             self.settings.general.public_tracker_handling == "tag_as_obsolete"
             or self.settings.general.private_tracker_handling == "tag_as_obsolete"
         ):
-            if self.settings.general.obsolete_tag not in current_tags:
-                logger.verbose(f"Creating obsolete tag: {self.settings.general.obsolete_tag}")
-                data = {"tags": self.settings.general.obsolete_tag}
-                await make_request(
-                    "post",
-                    self.api_url + "/torrents/createTags",
-                    self.settings,
-                    data=data,
-                    cookies=self.cookie,
-                )
+            await self.create_tag(self.settings.general.obsolete_tag)
 
     async def set_unwanted_folder(self):
         """Set the 'unwanted folder' setting in qBittorrent if needed."""
         if self.settings.jobs.remove_bad_files:
+            logger.debug("_download_clients_qBit.py/set_unwanted_folder: Checking preferences and setting use_unwanted_folder if not already set")
             endpoint = f"{self.api_url}/app/preferences"
             response = await make_request(
                 "get", endpoint, self.settings, cookies=self.cookie
@@ -174,6 +171,7 @@ class QbitClient:
     async def check_qbit_reachability(self):
         """Check if the qBittorrent URL is reachable."""
         try:
+            logger.debug("_download_clients_qBit.py/check_qbit_reachability: Checking if qbit is reachable")
             endpoint = f"{self.api_url}/auth/login"
             data = {"username": getattr(self, 'username', ''), "password": getattr(self, 'password', '')}
             headers = {"content-type": "application/x-www-form-urlencoded"}
@@ -189,6 +187,7 @@ class QbitClient:
 
     async def check_qbit_connected(self):
         """Check if the qBittorrent is connected to internet."""
+        logger.debug("_download_clients_qBit.py/check_qbit_reachability: Checking if qbit is connected to the internet")
         qbit_connection_status = ((
             await make_request(
                 "get",
@@ -222,7 +221,7 @@ class QbitClient:
             wait_and_exit()  # Exit if version check fails
 
         # Continue with other setup tasks regardless of version check result
-        await self.create_tag()
+        await self.create_required_tags()
         await self.set_unwanted_folder()
 
 
@@ -232,6 +231,7 @@ class QbitClient:
         private_downloads = []
 
         # Fetch all torrents
+        logger.debug("_download_clients_qBit/get_protected_and_private: Checking if torrents have protected tag")
         qbit_items = await self.get_qbit_items()
 
         for qbit_item in qbit_items:
@@ -245,6 +245,7 @@ class QbitClient:
                     if qbit_item.get("private"):
                         private_downloads.append(qbit_item["hash"].upper())
                 else:
+                    logger.debug("_download_clients_qBit/get_protected_and_private: Checking if torrents are private (only done for old qbit versions)")
                     qbit_item_props = await make_request(
                         "get",
                         self.api_url + "/torrents/properties",
@@ -278,6 +279,8 @@ class QbitClient:
 
         # Ensure tags are provided as a string separated by ',' (comma)
         tags_str = ",".join(tags)
+
+        logger.debug("_download_clients_qBit/set_tag: Setting tag(s) {tags_str} to {hashes_str}")
 
         # Prepare the data for the request
         data = {
@@ -319,6 +322,7 @@ class QbitClient:
 
     async def get_torrent_files(self, download_id):
         # this may not work if the wrong qbit
+        logger.debug("_download_clients_qBit/get_torrent_files: Getting torrent files")
         response = await make_request(
             method="get",
             endpoint=self.api_url + "/torrents/files",
@@ -329,6 +333,7 @@ class QbitClient:
         return response.json()
 
     async def set_torrent_file_priority(self, download_id, file_id, priority = 0):
+        logger.debug("_download_clients_qBit/set_torrent_file_priority: Setting download priority for torrent file")
         data={
             "hash": download_id.lower(),
             "id": file_id,

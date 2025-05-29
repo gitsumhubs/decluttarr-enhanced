@@ -1,6 +1,6 @@
 import pytest
+from unittest.mock import MagicMock
 from src.jobs.remove_metadata_missing import RemoveMetadataMissing
-from tests.jobs.test_utils import removal_job_fix
 
 # Test to check if items with the specific error message are included in affected items with parameterized data
 @pytest.mark.asyncio
@@ -41,7 +41,8 @@ from tests.jobs.test_utils import removal_job_fix
 )
 async def test_find_affected_items(queue_data, expected_download_ids):
     # Arrange
-    removal_job = removal_job_fix(RemoveMetadataMissing, queue_data=queue_data)
+    removal_job = RemoveMetadataMissing(arr=MagicMock(), settings=MagicMock(),job_name="test")
+    removal_job.queue = queue_data
 
     # Act
     affected_items = await removal_job._find_affected_items()   # pylint: disable=W0212
