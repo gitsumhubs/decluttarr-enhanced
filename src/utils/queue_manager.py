@@ -41,7 +41,7 @@ class QueueManager:
         queue = await self._get_arr_records(full_queue, record_count)
 
         # Step 4: Filter the queue based on delayed items and ignored download clients
-        queue = self._ignore_delayed_queue_items(queue)
+        queue = self._filter_out_ignored_statuses(queue)
         queue = self._filter_out_ignored_download_clients(queue)
         queue = self._add_detail_item_key(queue)
         return queue
@@ -96,28 +96,44 @@ class QueueManager:
         ).json()
         return records["records"]
 
-    def _ignore_delayed_queue_items(self, queue):
-        # Ignores delayed queue items
+    def _filter_out_ignored_statuses(self, queue, ignored_statuses=("delay","downloadClientUnavailable")):
+        """
+        All matching items are removed from the queue. However, logging of ignored items
+        is limited to one per (title, protocol, indexer) combination to reduce log noise.
+
+        Args:
+            queue (list[dict]): The queue to filter.
+            ignored_statuses (tuple[str]): Status values to ignore.
+
+        Returns:
+            list[dict]: Filtered queue.
+        """
         if queue is None:
             return queue
+
         seen_combinations = set()
         filtered_queue = []
-        for queue_item in queue:
-            indexer = queue_item.get("indexer", "No indexer")
-            protocol = queue_item.get("protocol", "No protocol")
-            combination = (queue_item["title"], protocol, indexer)
-            if queue_item["status"] == "delay":
+
+        for item in queue:
+            status = item.get("status")
+            title = item.get("title")
+            protocol = item.get("protocol", "No protocol")
+            indexer = item.get("indexer", "No indexer")
+            combination = (title, protocol, indexer)
+
+            if status in ignored_statuses:
                 if combination not in seen_combinations:
                     seen_combinations.add(combination)
                     logger.debug(
-                        ">>> Delayed queue item ignored: %s (Protocol: %s, Indexer: %s)",
-                        queue_item["title"],
-                        protocol,
-                        indexer,
+                        ">>> Ignored queue item: %s (Status: %s, Protocol: %s, Indexer: %s)",
+                        title, status, protocol, indexer
                     )
-            else:
-                filtered_queue.append(queue_item)
+                continue
+
+            filtered_queue.append(item)
+
         return filtered_queue
+
 
     def _filter_out_ignored_download_clients(self, queue):
         # Filters out ignored download clients
