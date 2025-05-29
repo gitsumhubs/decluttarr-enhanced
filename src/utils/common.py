@@ -41,7 +41,7 @@ async def make_request(
     ignore_test_run = kwargs.pop("ignore_test_run", False)
 
     if settings.general.test_run and not ignore_test_run:
-        if method.lower() in ("put", "post","delete"):
+        if method.lower() in ("put", "post", "delete"):
             if logger.isEnabledFor(logging.DEBUG):
                 sanitized_kwargs = sanitize_kwargs(copy.deepcopy(kwargs))
                 logger.debug(
