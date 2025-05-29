@@ -99,7 +99,8 @@ class QueueManager:
     def _filter_out_ignored_statuses(self, queue, ignored_statuses=("delay","downloadClientUnavailable")):
         """
         All matching items are removed from the queue. However, logging of ignored items
-        is limited to one per (title, protocol, indexer) combination to reduce log noise.
+        is limited to one per (download title, protocol, indexer) combination to reduce log noise
+        (since one download may be behind in multiple queue items)
 
         Args:
             queue (list[dict]): The queue to filter.
@@ -124,10 +125,7 @@ class QueueManager:
             if status in ignored_statuses:
                 if combination not in seen_combinations:
                     seen_combinations.add(combination)
-                    logger.debug(
-                        ">>> Ignored queue item: %s (Status: %s, Protocol: %s, Indexer: %s)",
-                        title, status, protocol, indexer
-                    )
+                    logger.debug(f"queue_manager.py/_filter_out_ignored_statuses: Ignored queue item: {title} (Status: {status}, Protocol: {protocol}, Indexer: {indexer})")
                 continue
 
             filtered_queue.append(item)
