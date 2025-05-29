@@ -1,5 +1,5 @@
-import pytest
 from unittest.mock import MagicMock
+import pytest
 from src.jobs.remove_missing_files import RemoveMissingFiles
 
 @pytest.mark.asyncio

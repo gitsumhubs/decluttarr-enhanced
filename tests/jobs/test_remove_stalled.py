@@ -1,7 +1,6 @@
+from unittest.mock import AsyncMock
 import pytest
 from src.jobs.remove_stalled import RemoveStalled
-from tests.jobs.test_utils import removal_job_fix
-from unittest.mock import AsyncMock
 
 # Test to check if items with the specific error message are included in affected items with parameterized data
 @pytest.mark.asyncio

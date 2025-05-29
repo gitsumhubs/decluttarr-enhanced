@@ -1,6 +1,7 @@
+
+from unittest.mock import MagicMock
 import pytest
 from src.jobs.remove_orphans import RemoveOrphans
-from tests.jobs.test_utils import removal_job_fix
 
 @pytest.fixture(name="queue_data")
 def fixture_queue_data():
@@ -34,7 +35,8 @@ def fixture_queue_data():
 @pytest.mark.asyncio
 async def test_find_affected_items_returns_queue(queue_data):
     # Fix
-    removal_job = removal_job_fix(RemoveOrphans, queue_data=queue_data)
+
+    removal_job = RemoveOrphans(arr=MagicMock(), settings=MagicMock(),job_name="test")
     removal_job.queue = queue_data
 
     # Act
