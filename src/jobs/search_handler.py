@@ -68,9 +68,8 @@ class SearchHandler:
         return [item for item in wanted_items if item["id"] not in queue_ids]
 
     async def _trigger_search(self, items):
-        if not self.settings.general.test_run:
-            ids = [item["id"] for item in items]
-            await self.wanted_manager.search_items(ids)
+        ids = [item["id"] for item in items]
+        await self.wanted_manager.search_items(ids)
 
     def _filter_recent_searches(self, items):
         now = datetime.now(timezone.utc)

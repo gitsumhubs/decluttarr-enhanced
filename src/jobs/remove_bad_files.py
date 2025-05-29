@@ -201,8 +201,7 @@ class RemoveBadFiles(RemovalJob):
     async def _mark_files_as_stopped(self, qbit_client, torrent_hash, stoppable_files):
         """Mark specific files as 'Do Not Download' in qBittorrent."""
         for file, _ in stoppable_files:  
-            if not self.settings.general.test_run:
-                await qbit_client.set_torrent_file_priority(torrent_hash, file['index'], 0)
+            await qbit_client.set_torrent_file_priority(torrent_hash, file['index'], 0)
 
     def _all_files_stopped(self, torrent_files, stoppable_files):
         """Check if all files are either stopped (priority 0) or in the stoppable files list."""

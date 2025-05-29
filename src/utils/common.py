@@ -6,6 +6,17 @@ import copy
 import requests
 from src.utils.log_setup import logger
 
+
+class DummyResponse:
+    def __init__(self, text="", status_code=200):
+        self.text = text
+        self.status_code = status_code
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise requests.HTTPError(f"Status code: {self.status_code}")
+
+
 def sanitize_kwargs(data):
     """Recursively redact sensitive values in kwargs for safe logging."""
     if isinstance(data, dict):
@@ -20,19 +31,32 @@ def sanitize_kwargs(data):
         return [sanitize_kwargs(item) for item in data]
     return data
 
+
 async def make_request(
     method: str, endpoint: str, settings, timeout: int = 15, log_error = True, **kwargs
 ) -> requests.Response:
     """
     A utility function to make HTTP requests (GET, POST, DELETE, PUT).
     """
+    ignore_test_run = kwargs.pop("ignore_test_run", False)
+
+    if settings.general.test_run and not ignore_test_run:
+        if method.lower() in ("put", "post","delete"):
+            if logger.isEnabledFor(logging.DEBUG):
+                sanitized_kwargs = sanitize_kwargs(copy.deepcopy(kwargs))
+                logger.debug(
+                    f"common.py/make_request: [Test Run] Simulating {method.upper()} request to {endpoint} with kwargs={sanitized_kwargs}"
+                )
+            return DummyResponse(text="Test run - no actual call made", status_code=200)
+
+
     try:
         if logger.isEnabledFor(logging.DEBUG):
             sanitized_kwargs = sanitize_kwargs(copy.deepcopy(kwargs))
             logger.debug(
                 f"common.py/make_request: Making {method.upper()} request to {endpoint} with kwargs={sanitized_kwargs}"
             )
-
+        
         # Make the request using the method passed (get, post, etc.)
         response = await asyncio.to_thread(
             getattr(requests, method.lower()),

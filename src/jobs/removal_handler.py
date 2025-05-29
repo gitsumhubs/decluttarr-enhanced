@@ -41,13 +41,11 @@ class RemovalHandler:
     async def _remove_download(self, queue_item, blocklist):
         queue_id = queue_item["id"]
         logger.info(f">>> Job '{self.job_name}' triggered removal: {queue_item['title']}")
-        if not self.settings.general.test_run:
-            await self.arr.remove_queue_item(queue_id=queue_id, blocklist=blocklist)
+        await self.arr.remove_queue_item(queue_id=queue_id, blocklist=blocklist)
 
     async def _tag_as_obsolete(self, queue_item, download_id):
         logger.info(f">>> Job'{self.job_name}' triggered obsolete-tagging: {queue_item['title']}")
-        if not self.settings.general.test_run:
-            for qbit in self.settings.download_clients.qbittorrent:
+        for qbit in self.settings.download_clients.qbittorrent:
                 await qbit.set_tag(tags=[self.settings.general.obsolete_tag], hashes=[download_id])
 
 

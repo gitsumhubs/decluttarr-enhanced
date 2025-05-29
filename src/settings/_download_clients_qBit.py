@@ -76,7 +76,7 @@ class QbitClient:
             data = {"username": getattr(self, 'username', ''), "password": getattr(self, 'password', '')}
             headers = {"content-type": "application/x-www-form-urlencoded"}
             response = await make_request(
-                "post", endpoint, self.settings, data=data, headers=headers
+                "post", endpoint, self.settings, data=data, headers=headers, ignore_test_run=True
             )
 
             if response.text == "Fails.":
@@ -124,15 +124,14 @@ class QbitClient:
         current_tags = response.json()
         if self.settings.general.protected_tag not in current_tags:
             logger.verbose(f"Creating protection tag: {self.settings.general.protected_tag}")
-            if not self.settings.general.test_run:
-                data = {"tags": self.settings.general.protected_tag}
-                await make_request(
-                    "post",
-                    self.api_url + "/torrents/createTags",
-                    self.settings,
-                    data=data,
-                    cookies=self.cookie,
-                )
+            data = {"tags": self.settings.general.protected_tag}
+            await make_request(
+                "post",
+                self.api_url + "/torrents/createTags",
+                self.settings,
+                data=data,
+                cookies=self.cookie,
+            )
 
         if (
             self.settings.general.public_tracker_handling == "tag_as_obsolete"
@@ -140,15 +139,14 @@ class QbitClient:
         ):
             if self.settings.general.obsolete_tag not in current_tags:
                 logger.verbose(f"Creating obsolete tag: {self.settings.general.obsolete_tag}")
-                if not self.settings.general.test_run:
-                    data = {"tags": self.settings.general.obsolete_tag}
-                    await make_request(
-                        "post",
-                        self.api_url + "/torrents/createTags",
-                        self.settings,
-                        data=data,
-                        cookies=self.cookie,
-                    )
+                data = {"tags": self.settings.general.obsolete_tag}
+                await make_request(
+                    "post",
+                    self.api_url + "/torrents/createTags",
+                    self.settings,
+                    data=data,
+                    cookies=self.cookie,
+                )
 
     async def set_unwanted_folder(self):
         """Set the 'unwanted folder' setting in qBittorrent if needed."""
@@ -163,15 +161,14 @@ class QbitClient:
                 logger.info(
                     "Enabling 'Keep unselected files in .unwanted folder' in qBittorrent."
                 )
-                if not self.settings.general.test_run:
-                    data = {"json": '{"use_unwanted_folder": true}'}
-                    await make_request(
-                        "post",
-                        self.api_url + "/app/setPreferences",
-                        self.settings,
-                        data=data,
-                        cookies=self.cookie,
-                    )
+                data = {"json": '{"use_unwanted_folder": true}'}
+                await make_request(
+                    "post",
+                    self.api_url + "/app/setPreferences",
+                    self.settings,
+                    data=data,
+                    cookies=self.cookie,
+                )
 
 
     async def check_qbit_reachability(self):
@@ -181,7 +178,7 @@ class QbitClient:
             data = {"username": getattr(self, 'username', ''), "password": getattr(self, 'password', '')}
             headers = {"content-type": "application/x-www-form-urlencoded"}
             await make_request(
-                "post", endpoint, self.settings, data=data, headers=headers, log_error=False
+                "post", endpoint, self.settings, data=data, headers=headers, log_error=False, ignore_test_run=True
             )
 
         except Exception as e:
