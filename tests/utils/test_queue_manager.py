@@ -26,14 +26,16 @@ def test_format_queue_single_item(mock_queue_manager):
             "id": 1,
         }
     ]
-    expected = [{
-        "downloadId": "abc123",
-        "downloadTitle": "Example Download Title",
-        "protocol": ["torrent"],
-        "status": ["queued"],
-        "IDs": [1],
-    }]
-    assert mock_queue_manager.format_queue(queue_items) == expected
+    expected = {
+        "abc123": {
+            "title": "Example Download Title",
+            "protocol": "torrent",
+            "status": "queued",
+            "queue_ids": [1],
+        }
+    }
+    result = mock_queue_manager.format_queue(queue_items)
+    assert result == expected
 
 def test_format_queue_multiple_same_download_id(mock_queue_manager):
     queue_items = [
@@ -52,14 +54,16 @@ def test_format_queue_multiple_same_download_id(mock_queue_manager):
             "id": 2,
         }
     ]
-    expected = [{
-        "downloadId": "xyz789",
-        "downloadTitle": "Example Download Title",
-        "protocol": ["usenet"],
-        "status": ["downloading"],
-        "IDs": [1, 2],
-    }]
-    assert mock_queue_manager.format_queue(queue_items) == expected
+    expected = {
+        "xyz789": {
+            "title": "Example Download Title",
+            "protocol": "usenet",
+            "status": "downloading",
+            "queue_ids": [1, 2],
+        }
+    }
+    result = mock_queue_manager.format_queue(queue_items)
+    assert result == expected
 
 def test_format_queue_multiple_different_download_ids(mock_queue_manager):
     queue_items = [
@@ -78,20 +82,19 @@ def test_format_queue_multiple_different_download_ids(mock_queue_manager):
             "id": 20,
         }
     ]
-    expected = [
-        {
-            "downloadId": "aaa111",
-            "downloadTitle": "Example Download Title A",
-            "protocol": ["torrent"],
-            "status": ["queued"],
-            "IDs": [10],
+    expected = {
+        'aaa111': {
+            'queue_ids': [10],
+            'title': 'Example Download Title A',
+            'protocol': 'torrent',
+            'status': 'queued'
         },
-        {
-            "downloadId": "bbb222",
-            "downloadTitle": "Example Download Title B",
-            "protocol": ["usenet"],
-            "status": ["completed"],
-            "IDs": [20],
+        'bbb222': {
+            'queue_ids': [20],
+            'title': 'Example Download Title B',
+            'protocol': 'usenet',
+            'status': 'completed'
         }
-    ]
-    assert mock_queue_manager.format_queue(queue_items) == expected
+    }
+    result = mock_queue_manager.format_queue(queue_items)
+    assert result == expected

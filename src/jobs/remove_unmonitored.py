@@ -1,5 +1,6 @@
 from src.jobs.removal_job import RemovalJob
 
+
 class RemoveUnmonitored(RemovalJob):
     queue_scope = "normal"
     blocklist = False
@@ -9,8 +10,11 @@ class RemoveUnmonitored(RemovalJob):
         monitored_download_ids = []
         for item in self.queue:
             detail_item_id = item["detail_item_id"]
-            if await self.arr.is_monitored(detail_item_id):
+            if detail_item_id is None or await self.arr.is_monitored(detail_item_id):
+                # When queue item has been matched to artist (for instance in lidarr) but not yet to the detail (eg. album), then detail key is logically missing.
+                # Thus we can't check if the item is monitored yet
                 monitored_download_ids.append(item["downloadId"])
+          
 
         # Second pass: Append queue items none that depends on download id is monitored
         affected_items = []

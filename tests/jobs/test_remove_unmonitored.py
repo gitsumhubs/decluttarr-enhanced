@@ -51,6 +51,16 @@ from src.jobs.remove_unmonitored import RemoveUnmonitored
             {101: False, 102: False},
             ["1", "1"]
         ),
+        # One monitored, one not, one not matched yet
+        (
+            [
+                {"downloadId": "1", "detail_item_id": 101},
+                {"downloadId": "2", "detail_item_id": 102},
+                {"downloadId": "3", "detail_item_id": None}
+            ],
+            {101: True, 102: False},
+            ["2"]
+        ),
     ]
 )
 async def test_find_affected_items(queue_data, monitored_ids, expected_download_ids):

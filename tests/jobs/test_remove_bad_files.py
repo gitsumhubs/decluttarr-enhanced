@@ -4,25 +4,11 @@ import pytest
 from src.jobs.remove_bad_files import RemoveBadFiles
 
 # Fixture for arr mock
-@pytest.fixture(name="arr")
-def fixture_arr():
-    arr = AsyncMock()
-    arr.api_url = "https://mock-api-url"
-    arr.api_key = "mock_api_key"
-    arr.tracker = AsyncMock()
-    arr.tracker.extension_checked = []
-    arr.get_download_client_implementation.return_value = "QBittorrent"
-    return arr
-
-
-@pytest.fixture(name="qbit_client")
-def fixture_qbit_client():
-    qbit_client = AsyncMock()
-    return qbit_client
-
-
 @pytest.fixture(name="removal_job")
-def fixture_removal_job(arr):
+def fixture_removal_job():
+    arr = AsyncMock()
+    arr.get_download_client_implementation.return_value = "QBittorrent"
+
     removal_job = RemoveBadFiles(arr=arr, settings=MagicMock(), job_name="test")
     removal_job.arr = arr
     removal_job.job = MagicMock()
@@ -186,10 +172,11 @@ def test_is_complete_partial(removal_job, file, is_incomplete_partial):
     ],
 )
 @pytest.mark.asyncio
-async def test_get_items_to_process(qbit_item, expected_processed, removal_job, arr):
+async def test_get_items_to_process(qbit_item, expected_processed, removal_job):
     """Test the _get_items_to_process method of RemoveBadFiles class."""
     # Mocking the tracker extension_checked to simulate which torrents have been checked
-    arr.tracker.extension_checked = {"checked-hash"}
+    removal_job.arr.tracker = AsyncMock()
+    removal_job.arr.tracker.extension_checked = {"checked-hash"}
 
     # Act
     processed_items = removal_job._get_items_to_process( # pylint: disable=W0212

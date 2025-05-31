@@ -155,56 +155,40 @@ class QueueManager:
     def format_queue(self, queue_items):
         if not queue_items:
             return "empty"
+        return self.group_by_download_id(queue_items)
 
-        formatted_dict = {}
+    def group_by_download_id(self, queue_items):
+        # Groups queue items by download ID and returns a dict where download ID is the key,
+        # and the value is a dict with a list of IDs and other selected metadata.
+        retain_keys = [
+            "detail_item_id",
+            "title",
+            "size",
+            "sizeleft",
+            "downloadClient",
+            "protocol",
+            "status",
+            "trackedDownloadState",
+            "statusMessages",
+            "removal_messages",
+        ]
+
+        grouped_dict = {}
 
         for queue_item in queue_items:
             download_id = queue_item.get("downloadId")
             item_id = queue_item.get("id")
 
-            if download_id in formatted_dict:
-                formatted_dict[download_id]["IDs"].append(item_id)
+            if download_id in grouped_dict:
+                grouped_dict[download_id]["queue_ids"].append(item_id)
             else:
-                formatted_dict[download_id] = {
-                    "downloadId": download_id,
-                    "downloadTitle": queue_item.get("title"),
-                    "protocol": [queue_item.get("protocol")],
-                    "status": [queue_item.get("status")],
-                    "IDs": [item_id],
+                grouped_dict[download_id] = {
+                    "queue_ids": [item_id],
+                    **{
+                        key: queue_item[key]
+                        for key in retain_keys
+                        if key in queue_item
+                    },
                 }
-
-        return list(formatted_dict.values())
-
-    def group_by_download_id(self, queue_items):
-        # Groups queue items by download ID and returns a dict where download ID is the key, and value is the list of queue items belonging to that downloadID
-        # Queue item is limited to certain keys
-        retain_keys = {
-            "id": None,
-            "detail_item_id": None,
-            "title": "Unknown",
-            "size": 0,
-            "sizeleft": 0,
-            "downloadClient": "Unknown",
-            "protocol": "Unknown",
-            "status": "Unknown",
-            "trackedDownloadState": "Unknown",
-            "statusMessages": [],
-            "removal_messages": [],
-        }
-
-        grouped_dict = {}
-
-        for queue_item in queue_items:
-            download_id = queue_item["downloadId"]
-            if download_id not in grouped_dict:
-                grouped_dict[download_id] = []
-
-            # Filter and add default values if keys are missing
-            filtered_item = {
-                key: queue_item.get(key, retain_keys.get(key, None))
-                for key in retain_keys
-            }
-
-            grouped_dict[download_id].append(filtered_item)
 
         return grouped_dict
