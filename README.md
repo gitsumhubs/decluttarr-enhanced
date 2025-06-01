@@ -19,7 +19,7 @@ _Like this app? Thanks for giving it a_ ⭐️
     - [IGNORE_DOWNLOAD_CLIENTS](#ignore_download_clients)
     - [PRIVATE_TRACKER_HANDLING / PUBLIC_TRACKER_HANDLING](#private_tracker_handling--public_tracker_handling)
     - [OBSOLETE_TAG](#obsolete_tag)
-    - [PROTECTED_TAGS](#protected_tag)
+    - [PROTECTED_TAG](#protected_tag)
   - [Job Defaults](#job-defaults)
     - [MAX_STRIKES](#max_strikes)
     - [MIN_DAYS_BETWEEN_SEARCHES](#min_days_between_searches)
@@ -68,7 +68,7 @@ Feature overview:
 
 
 Key behaviors:
--   Torrents of private trackers and public trackers in different ways (they can be removed, be skipped entirely, or be tagged as 'obsolete', so that other programs can remove them once the seed targets have been reached)
+-   Can handle torrents of private trackers and public trackers in different ways (they can be removed, be skipped entirely, or be tagged as 'obsolete', so that other programs can remove them once the seed targets have been reached)
 -   If a job removes a download, it will automatically trigger a search for a new download, and remove the (partial) files downloaded thus far
 -   Certain jobs add removed downloads automatically to the blocklists of the arr-applications, to prevent the same download from being grabbed again
 -   If certain downloads should not be touched by decluttarr, they can be tagged with a protection-tag in Qbit 
