@@ -1,7 +1,7 @@
 #FROM python:3.9-slim-buster
 # For debugging:
     # First build:  
-    # sudo docker build --no-cache --progress=plain -f ./docker/dockerfile -t decluttarr .
+    # sudo docker build --no-cache --progress=plain -f ./docker/Dockerfile -t decluttarr .
 
     # Entering image (and printing env variables):
     # sudo docker run --rm -it -w /app --entrypoint sh decluttarr -c "printenv; exec sh"

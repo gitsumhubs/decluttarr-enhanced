@@ -54,8 +54,10 @@ class RemovalHandler:
         if affected_download['protocol'] != 'torrent':
             return "remove" # handling is only implemented for torrent
 
-        client_implementation = await self.arr.get_download_client_implementation(affected_download['downloadClient'])
-        if client_implementation != "QBittorrent":
+        download_client_name = affected_download["downloadClient"]
+        _, download_client_type = self.settings.download_clients.get_download_client_by_name(download_client_name)
+
+        if download_client_type != "qbittorrent":
             return "remove" # handling is only implemented for qbit
 
         if len(self.settings.download_clients.qbittorrent) == 0:

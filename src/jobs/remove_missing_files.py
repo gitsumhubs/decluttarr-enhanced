@@ -9,7 +9,7 @@ class RemoveMissingFiles(RemovalJob):
         affected_items = []
 
         for item in self.queue:
-            if self._is_failed_torrent(item) or self._no_elibible_import(item):
+            if self._is_failed_torrent(item) or self._no_eligible_import(item):
                 affected_items.append(item)
         return affected_items
 
@@ -19,7 +19,8 @@ class RemoveMissingFiles(RemovalJob):
             "status" in item
             and item["status"] == "warning"
             and "errorMessage" in item
-            and item["errorMessage"] in [
+            and item["errorMessage"]
+            in [
                 "DownloadClientQbittorrentTorrentStateMissingFiles",
                 "The download is missing files",
                 "qBittorrent is reporting missing files",
@@ -27,11 +28,17 @@ class RemoveMissingFiles(RemovalJob):
         )
 
     @staticmethod
-    def _no_elibible_import(item) -> bool:
-        if "status" in item and item["status"] == "completed" and "statusMessages" in item:
+    def _no_eligible_import(item) -> bool:
+        if (
+            "status" in item
+            and item["status"] == "completed"
+            and "statusMessages" in item
+        ):
             for status_message in item["statusMessages"]:
                 if "messages" in status_message:
                     for message in status_message["messages"]:
-                        if message.startswith("No files found are eligible for import in"):
+                        if message.startswith(
+                            "No files found are eligible for import in"
+                        ):
                             return True
         return False

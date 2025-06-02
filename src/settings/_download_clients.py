@@ -66,8 +66,8 @@ class DownloadClients:
             download_clients = getattr(self, download_client_type, [])
 
             # Check each client in the list
-            for client in download_clients:
-                if client.name.lower() == name_lower:
-                    return client, download_client_type
+            for download_client in download_clients:
+                if download_client.name.lower() == name_lower:
+                    return download_client, download_client_type
 
         return None, None

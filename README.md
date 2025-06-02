@@ -98,7 +98,7 @@ How to run this:
 
 ## Getting started
 
-You can run decluttarr either as local python script, or inside docker.
+You can run decluttarr either as local python script, or as a docker container.
 
 ### Running locally
 
@@ -117,7 +117,7 @@ jobs:
   remove_bad_files:  # This is turned on
 # remove_bad_files:  # This is turned off  
 
-## Note that this is different from docker-compose (where both exsmples above would be turned off; in docker, "true" or additional options are required as value next to the key)
+## Note that this is different from docker-compose (where both examples above would be turned off; in docker, "true" or additional options are required as value next to the key)
 ```
 
 

@@ -5,32 +5,35 @@ from src.jobs.removal_handler import RemovalHandler
 
 
 @pytest.mark.parametrize(
-    "qbittorrent_configured, is_private, client_impl, protocol, expected",
+    "qbittorrent_configured, is_private, client_type, protocol, expected",
     [
-        (True, True, "QBittorrent", "torrent", "private_handling"),
-        (True, False, "QBittorrent", "torrent", "public_handling"),
-        (False, True, "QBittorrent", "torrent", "remove"),
-        (False, False, "QBittorrent", "torrent", "remove"),
-        (True, False, "Transmission", "torrent", "remove"),  # unsupported client
-        (True, False, "MyUseNetClient", "usenet", "remove"),  # unsupported protocol
+        (True, True, "qbittorrent", "torrent", "private_handling"),
+        (True, False, "qbittorrent", "torrent", "public_handling"),
+        (False, True, "qbittorrent", "torrent", "remove"),
+        (False, False, "qbittorrent", "torrent", "remove"),
+        (True, False, "transmission", "torrent", "remove"),  # unsupported client
+        (True, False, "myusenetclient", "usenet", "remove"),  # unsupported protocol
     ],
 )
 @pytest.mark.asyncio
 async def test_get_handling_method(
     qbittorrent_configured,
     is_private,
-    client_impl,
+    client_type,
     protocol,
     expected,
 ):
     # Mock arr
     arr = AsyncMock()
     arr.tracker.private = ["A"] if is_private else []
-    arr.get_download_client_implementation.return_value = client_impl
 
-    # Mock settings
+    # Mock settings and get_download_client_by_name
     settings = MagicMock()
     settings.download_clients.qbittorrent = ["dummy"] if qbittorrent_configured else []
+
+    # Simulate (client_name, client_type) return
+    settings.download_clients.get_download_client_by_name.return_value = ("client_name", client_type)
+
     settings.general.private_tracker_handling = "private_handling"
     settings.general.public_tracker_handling = "public_handling"
 

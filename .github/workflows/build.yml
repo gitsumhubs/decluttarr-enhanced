@@ -121,7 +121,7 @@ jobs:
           fi
 
           docker buildx build \
-            --platform linux/amd64,linux/arm64 -f docker/dockerfile . \
+            --platform linux/amd64,linux/arm64 -f docker/Dockerfile . \
             --progress plain \
             -t $IMAGE_NAME:$IMAGE_TAG \
             $TAG_LATEST \
