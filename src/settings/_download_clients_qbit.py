@@ -1,6 +1,7 @@
 from packaging import version
-from src.utils.common import make_request, wait_and_exit
+
 from src.settings._constants import ApiEndpoints, MinVersions
+from src.utils.common import make_request, wait_and_exit
 from src.utils.log_setup import logger
 
 
@@ -9,7 +10,7 @@ class QbitError(Exception):
 
 
 class QbitClients(list):
-    """Represents all qBittorrent clients"""
+    """Represents all qBittorrent clients."""
 
     def __init__(self, config, settings):
         super().__init__()
@@ -20,7 +21,7 @@ class QbitClients(list):
 
         if not isinstance(qbit_config, list):
             logger.error(
-                "Invalid config format for qbittorrent clients. Expected a list."
+                "Invalid config format for qbittorrent clients. Expected a list.",
             )
             return
 
@@ -34,7 +35,7 @@ class QbitClients(list):
 class QbitClient:
     """Represents a single qBittorrent client."""
 
-    cookie: str = None
+    cookie: dict[str, str] = None
     version: str = None
 
     def __init__(
@@ -48,11 +49,12 @@ class QbitClient:
         self.settings = settings
         if not base_url:
             logger.error("Skipping qBittorrent client entry: 'base_url' is required.")
-            raise ValueError("qBittorrent client must have a 'base_url'.")
+            error = "qBittorrent client must have a 'base_url'."
+            raise ValueError(error)
 
         self.base_url = base_url.rstrip("/")
-        self.api_url = self.base_url + getattr(ApiEndpoints, "qbittorrent")
-        self.min_version = getattr(MinVersions, "qbittorrent")
+        self.api_url = self.base_url + ApiEndpoints.qbittorrent
+        self.min_version = MinVersions.qbittorrent
         self.username = username
         self.password = password
         self.name = name
@@ -65,13 +67,18 @@ class QbitClient:
         self._remove_none_attributes()
 
     def _remove_none_attributes(self):
-        """Removes attributes that are None to keep the object clean."""
+        """Remove attributes that are None to keep the object clean."""
         for attr in list(vars(self)):
             if getattr(self, attr) is None:
                 delattr(self, attr)
 
     async def refresh_cookie(self):
         """Refresh the qBittorrent session cookie."""
+
+        def _connection_error():
+            error = "Login failed."
+            raise ConnectionError(error)
+
         try:
             logger.debug(
                 "_download_clients_qBit.py/refresh_cookie: Refreshing qBit cookie"
@@ -92,7 +99,7 @@ class QbitClient:
             )
 
             if response.text == "Fails.":
-                raise ConnectionError("Login failed.")
+                _connection_error()
 
             self.cookie = {"SID": response.cookies["SID"]}
         except Exception as e:
@@ -118,14 +125,13 @@ class QbitClient:
 
         if version.parse(self.version) < version.parse(min_version):
             logger.error(
-                f"Please update qBittorrent to at least version {min_version}. Current version: {self.version}"
+                f"Please update qBittorrent to at least version {min_version}. Current version: {self.version}",
             )
-            raise QbitError(
-                f"qBittorrent version {self.version} is too old. Please update."
-            )
+            error = f"qBittorrent version {self.version} is too old. Please update."
+            raise QbitError(error)
         if version.parse(self.version) < version.parse("5.0.0"):
             logger.info(
-                f"[Tip!] Consider upgrading to qBittorrent v5.0.0 or newer to reduce network overhead."
+                "[Tip!] Consider upgrading to qBittorrent v5.0.0 or newer to reduce network overhead.",
             )
 
     async def create_tag(self, tag: str):
@@ -166,13 +172,13 @@ class QbitClient:
             )
             endpoint = f"{self.api_url}/app/preferences"
             response = await make_request(
-                "get", endpoint, self.settings, cookies=self.cookie
+                "get", endpoint, self.settings, cookies=self.cookie,
             )
             qbit_settings = response.json()
 
             if not qbit_settings.get("use_unwanted_folder"):
                 logger.info(
-                    "Enabling 'Keep unselected files in .unwanted folder' in qBittorrent."
+                    "Enabling 'Keep unselected files in .unwanted folder' in qBittorrent.",
                 )
                 data = {"json": '{"use_unwanted_folder": true}'}
                 await make_request(
@@ -205,7 +211,7 @@ class QbitClient:
                 ignore_test_run=True,
             )
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             tip = "💡 Tip: Did you specify the URL (and username/password if required) correctly?"
             logger.error(f"-- | qBittorrent\n❗️ {e}\n{tip}\n")
             wait_and_exit()
@@ -227,8 +233,7 @@ class QbitClient:
         )["server_state"]["connection_status"]
         if qbit_connection_status == "disconnected":
             return False
-        else:
-            return True
+        return True
 
     async def setup(self):
         """Perform the qBittorrent setup by calling relevant managers."""
@@ -252,7 +257,7 @@ class QbitClient:
         await self.set_unwanted_folder()
 
     async def get_protected_and_private(self):
-        """Fetches torrents from qBittorrent and checks for protected and private status."""
+        """Fetch torrents from qBittorrent and checks for protected and private status."""
         protected_downloads = []
         private_downloads = []
 
@@ -301,11 +306,12 @@ class QbitClient:
 
     async def set_tag(self, tags, hashes):
         """
-        Sets tags to one or more torrents in qBittorrent.
+        Set tags to one or more torrents in qBittorrent.
 
         Args:
             tags (list): A list of tag names to be added.
             hashes (list): A list of torrent hashes to which the tags should be applied.
+
         """
         # Ensure hashes are provided as a string separated by '|'
         hashes_str = "|".join(hashes)

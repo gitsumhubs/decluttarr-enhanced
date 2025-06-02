@@ -1,3 +1,5 @@
+"""Removes stalled downloads."""
+
 from src.jobs.removal_job import RemovalJob
 
 
@@ -6,15 +8,5 @@ class RemoveStalled(RemovalJob):
     blocklist = True
 
     async def _find_affected_items(self):
-        affected_items = []
-        for item in self.queue:
-            if "errorMessage" in item and "status" in item:
-                if (
-                    item["status"] == "warning"
-                    and item["errorMessage"]
-                    == "The download is stalled with no connections"
-                ):
-                    affected_items.append(item)
-        return affected_items
-
-
+        conditions = [("warning", "The download is stalled with no connections")]
+        return self.queue_manager.filter_queue_by_status_and_error_message(self.queue, conditions)

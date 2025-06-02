@@ -8,7 +8,6 @@ class StrikesHandler:
         self.max_strikes = max_strikes
         self.tracker.defective.setdefault(job_name, {})
 
-
     def check_permitted_strikes(self, affected_downloads):
         self._recover_downloads(affected_downloads)
         return self._apply_strikes_and_filter(affected_downloads)
@@ -27,10 +26,9 @@ class StrikesHandler:
             )
             del self.tracker.defective[self.job_name][d_id]
 
-
     def _apply_strikes_and_filter(self, affected_downloads):
-        for d_id, queue_items in list(affected_downloads.items()):
-            title = queue_items[0]["title"]
+        for d_id, affected_download in list(affected_downloads.items()):
+            title = affected_download["title"]
             strikes = self._increment_strike(d_id, title)
             strikes_left = self.max_strikes - strikes
             self._log_strike_status(title, strikes, strikes_left)
@@ -39,10 +37,9 @@ class StrikesHandler:
 
         return affected_downloads
 
-
     def _increment_strike(self, d_id, title):
         entry = self.tracker.defective[self.job_name].setdefault(
-            d_id, {"title": title, "strikes": 0}
+            d_id, {"title": title, "strikes": 0},
         )
         entry["strikes"] += 1
         return entry["strikes"]
@@ -58,7 +55,7 @@ class StrikesHandler:
                 ">>> Job '%s' detected download (%s/%s strikes): %s",
                 self.job_name, strikes, self.max_strikes, title,
             )
-        elif strikes_left <= -2:
+        elif strikes_left <= -2:  # noqa: PLR2004
             logger.info(
                 ">>> Job '%s' detected download (%s/%s strikes): %s",
                 self.job_name, strikes, self.max_strikes, title,

@@ -14,7 +14,6 @@ class RemoveUnmonitored(RemovalJob):
                 # When queue item has been matched to artist (for instance in lidarr) but not yet to the detail (eg. album), then detail key is logically missing.
                 # Thus we can't check if the item is monitored yet
                 monitored_download_ids.append(item["downloadId"])
-          
 
         # Second pass: Append queue items none that depends on download id is monitored
         affected_items = []

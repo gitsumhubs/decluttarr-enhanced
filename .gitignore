@@ -10,3 +10,4 @@ temp
 .notebooks
 **/old/
 logs/*
+.idea/*

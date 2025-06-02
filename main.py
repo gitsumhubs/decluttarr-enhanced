@@ -1,9 +1,9 @@
 import asyncio
-from src.settings.settings import Settings
 
-from src.utils.startup import launch_steps
-from src.utils.log_setup import logger
 from src.job_manager import JobManager
+from src.settings.settings import Settings
+from src.utils.log_setup import logger
+from src.utils.startup import launch_steps
 
 settings = Settings()
 job_manager = JobManager(settings)

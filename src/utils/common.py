@@ -1,9 +1,10 @@
+import asyncio
 import sys
 import time
-import asyncio
 import logging
 import copy
 import requests
+
 from src.utils.log_setup import logger
 
 
@@ -27,13 +28,13 @@ def sanitize_kwargs(data):
             else:
                 redacted[key] = sanitize_kwargs(value)
         return redacted
-    elif isinstance(data, list):
+    if isinstance(data, list):
         return [sanitize_kwargs(item) for item in data]
     return data
 
 
 async def make_request(
-    method: str, endpoint: str, settings, timeout: int = 15, log_error = True, **kwargs
+    method: str, endpoint: str, settings, timeout: int = 15, *, log_error=True, **kwargs,
 ) -> requests.Response:
     """
     A utility function to make HTTP requests (GET, POST, DELETE, PUT).
@@ -56,7 +57,7 @@ async def make_request(
             logger.debug(
                 f"common.py/make_request: Making {method.upper()} request to {endpoint} with kwargs={sanitized_kwargs}"
             )
-        
+
         # Make the request using the method passed (get, post, etc.)
         response = await asyncio.to_thread(
             getattr(requests, method.lower()),

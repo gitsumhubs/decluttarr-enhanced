@@ -1,49 +1,47 @@
-
-from unittest.mock import MagicMock
 import pytest
+
+from tests.jobs.utils import shared_fix_affected_items, shared_test_affected_items
 from src.jobs.remove_orphans import RemoveOrphans
 
-@pytest.fixture(name="queue_data")
-def fixture_queue_data():
-    return [
-        {
-            "downloadId": "AABBCC",
-            "id": 1,
-            "title": "My Series A - Season 1",
-            "size": 1000,
-            "sizeleft": 500,
-            "downloadClient": "qBittorrent",
-            "protocol": "torrent",
-            "status": "paused",
-            "trackedDownloadState": "downloading",
-            "statusMessages": [],
-        },
-        {
-            "downloadId": "112233",
-            "id": 2,
-            "title": "My Series B - Season 1",
-            "size": 1000,
-            "sizeleft": 500,
-            "downloadClient": "qBittorrent",
-            "protocol": "torrent",
-            "status": "paused",
-            "trackedDownloadState": "downloading",
-            "statusMessages": [],
-        }
-    ]
 
 @pytest.mark.asyncio
-async def test_find_affected_items_returns_queue(queue_data):
-    # Fix
+@pytest.mark.parametrize(
+    ("queue_data", "expected_download_ids"),
+    [
+        (
+            [
+                {
+                    "downloadId": "1",
+                    "id": 1,
+                    "title": "My Series A - Season 1",
+                    "size": 1000,
+                    "sizeleft": 500,
+                    "downloadClient": "qBittorrent",
+                    "protocol": "torrent",
+                    "status": "paused",
+                    "trackedDownloadState": "downloading",
+                    "statusMessages": [],
+                },
+                {
+                    "downloadId": "2",
+                    "id": 2,
+                    "title": "My Series B - Season 1",
+                    "size": 1000,
+                    "sizeleft": 500,
+                    "downloadClient": "qBittorrent",
+                    "protocol": "torrent",
+                    "status": "paused",
+                    "trackedDownloadState": "downloading",
+                    "statusMessages": [],
+                },
+            ],
+            ["1", "2"],
+        ),
+    ],
+)
+async def test_find_affected_items(queue_data, expected_download_ids):
+    # Arrange
+    removal_job = shared_fix_affected_items(RemoveOrphans, queue_data)
 
-    removal_job = RemoveOrphans(arr=MagicMock(), settings=MagicMock(),job_name="test")
-    removal_job.queue = queue_data
-
-    # Act
-    affected_items = await removal_job._find_affected_items()   # pylint: disable=W0212
-
-    # Assert
-    assert isinstance(affected_items, list)
-    assert len(affected_items) == 2
-    assert affected_items[0]["downloadId"] == "AABBCC"
-    assert affected_items[1]["downloadId"] == "112233"
+    # Act and Assert
+    await shared_test_affected_items(removal_job, expected_download_ids)

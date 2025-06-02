@@ -58,7 +58,7 @@ instances:
 
 download_clients:
   qbittorrent:
-    - base_url: "http://qbittorrent:8080" # You can use decluttar without qbit (not all features available, see readme).
+    - base_url: "http://qbittorrent:8080" # You can use decluttarr without qbit (not all features available, see readme).
       # username: xxxx # (optional -> if not provided, assuming not needed)
       # password: xxxx # (optional -> if not provided, assuming not needed)
       # name: "qBittorrent" # (optional -> if not provided, assuming "qBittorrent". Must correspond with what is specified in your *arr as download client name)

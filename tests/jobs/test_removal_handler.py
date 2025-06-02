@@ -1,7 +1,7 @@
 from unittest.mock import AsyncMock, MagicMock
 import pytest
-from src.jobs.removal_handler import RemovalHandler
 
+from src.jobs.removal_handler import RemovalHandler
 
 
 @pytest.mark.parametrize(
@@ -12,8 +12,8 @@ from src.jobs.removal_handler import RemovalHandler
         (False, True, "QBittorrent", "torrent", "remove"),
         (False, False, "QBittorrent", "torrent", "remove"),
         (True, False, "Transmission", "torrent", "remove"),  # unsupported client
-        (True, False, "MyUseNetClient", "usenet", "remove"), # unsupported protocol
-    ]
+        (True, False, "MyUseNetClient", "usenet", "remove"),  # unsupported protocol
+    ],
 )
 @pytest.mark.asyncio
 async def test_get_handling_method(
@@ -41,6 +41,7 @@ async def test_get_handling_method(
         "protocol": protocol,
     }
 
-    result = await handler._get_handling_method("A", affected_download)  # pylint: disable=protected-access
+    result = await handler._get_handling_method( # pylint: disable=W0212
+        "A", affected_download
+    )
     assert result == expected
-

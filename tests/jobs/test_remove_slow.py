@@ -1,11 +1,13 @@
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 import pytest
+
+from tests.jobs.utils import shared_fix_affected_items, shared_test_affected_items
 from src.jobs.remove_slow import RemoveSlow
 
 
-@pytest.mark.asyncio
+@pytest.mark.asynciox
 @pytest.mark.parametrize(
-    "item, expected_result",
+    ("item", "expected_result"),
     [
         (
             # Valid: has downloadId, size, sizeleft, and status = "downloading"
@@ -57,11 +59,11 @@ from src.jobs.remove_slow import RemoveSlow
 )
 async def test_is_valid_item(item, expected_result):
     # Arrange
-    removal_job = RemoveSlow(arr=MagicMock(), settings=MagicMock(),job_name="test")
+    removal_job = shared_fix_affected_items(RemoveSlow)
 
     # Act
     result = removal_job._is_valid_item(item)  # pylint: disable=W0212
-    
+
     # Assert
     assert result == expected_result
 
@@ -114,43 +116,35 @@ def fixture_queue_data():
     ]
 
 
-@pytest.fixture(name="arr")
-def fixture_arr():
-    mock = MagicMock()
-    mock.tracker.download_progress = AsyncMock()
-    return mock
-
-
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "min_speed, expected_ids",
+    ("min_speed", "expected_download_ids"),
     [
         (0, []),  # No min download speed; all torrents pass
         (500, ["stuck"]),  # Only stuck and slow are included
         (1000, ["stuck", "slow"]),  # Same as above
         (10000, ["stuck", "slow", "medium"]),  # Only stuck and slow are below 5.0
-        (1000000, ["stuck", "slow", "medium", "fast"]), # Fast torrent included (but not importing)
+        (1000000, ["stuck", "slow", "medium", "fast"]),  # Fast torrent included (but not importing)
     ],
 )
 async def test_find_affected_items_with_varied_speeds(
-    queue_data, min_speed, expected_ids, arr
+    queue_data, min_speed, expected_download_ids,
 ):
     # Arrange
-    removal_job = RemoveSlow(arr=MagicMock(), settings=MagicMock(),job_name="test")
-    removal_job.queue = queue_data
+    removal_job = shared_fix_affected_items(RemoveSlow, queue_data)
 
-    # Set up job and timer
+    # Job-specific arrangements
     removal_job.job = MagicMock()
     removal_job.job.min_speed = min_speed
     removal_job.settings = MagicMock()
-    removal_job.settings.general.timer = 1  # 1 minute for speed calculation
-    removal_job.arr = arr  # Inject the mocked arr object
-    removal_job._is_valid_item = MagicMock( return_value=True )  # Mock the _is_valid_item method to always return True # pylint: disable=W0212
-    
+    removal_job.settings.general.timer = 1
+
+    removal_job._is_valid_item = MagicMock(return_value=True)  # Mock the _is_valid_item method to always return True # pylint: disable=W0212
+
     # Inject size and sizeleft into each item in the queue
     for item in queue_data:
         item["size"] = item["total_size"] * 1000000  # Inject total size as 'size'
-        item["sizeleft"] = ( item["size"] - item["progress_now"] * 1000000 )  # Calculate sizeleft
+        item["sizeleft"] = item["size"] - item["progress_now"] * 1000000  # Calculate sizeleft
         item["status"] = "downloading"
         item["title"] = item["downloadId"]
 
@@ -160,14 +154,5 @@ async def test_find_affected_items_with_varied_speeds(
         for item in queue_data
     }
 
-    
     # Act
-    affected_items = await removal_job._find_affected_items()  # pylint: disable=W0212
-    affected_ids = [item["downloadId"] for item in affected_items]
-
-    # Assert that the affected cases match the expected ones
-    assert sorted(affected_ids) == sorted(expected_ids)
-
-    # Ensure 'importing' and 'usenet' are never flagged for removal
-    assert "importing" not in affected_ids
-    assert "usenet" not in affected_ids
+    await shared_test_affected_items(removal_job, expected_download_ids)

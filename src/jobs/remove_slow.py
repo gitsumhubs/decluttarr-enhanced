@@ -25,31 +25,34 @@ class RemoveSlow(RemovalJob):
 
             if self._is_completed_but_stuck(item):
                 logger.info(
-                    f">>> '{self.job_name}' detected download marked as slow as well as completed. Files most likely in process of being moved. Not removing: {item['title']}"
+                    f">>> '{self.job_name}' detected download marked as slow as well as completed. Files most likely in process of being moved. Not removing: {item['title']}",
                 )
                 continue
 
             downloaded, previous, increment, speed = await self._get_progress_stats(
-                item
+                item,
             )
             if self._is_slow(speed):
                 affected_items.append(item)
                 logger.debug(
                     f'remove_slow/slow speed detected: {item["title"]} '
                     f"(Speed: {speed} KB/s, KB now: {downloaded}, KB previous: {previous}, "
-                    f"Diff: {increment}, In Minutes: {self.settings.general.timer})"
+                    f"Diff: {increment}, In Minutes: {self.settings.general.timer})",
                 )
 
         return affected_items
 
-    def _is_valid_item(self, item):
-        required_keys = {"downloadId", "size", "sizeleft", "status", "protocol"}  
+    @staticmethod
+    def _is_valid_item(item) -> bool:
+        required_keys = {"downloadId", "size", "sizeleft", "status", "protocol"}
         return required_keys.issubset(item)
 
-    def _is_usenet(self, item):
+    @staticmethod
+    def _is_usenet(item) -> bool:
         return item.get("protocol") == "usenet"
 
-    def _is_completed_but_stuck(self, item):
+    @staticmethod
+    def _is_completed_but_stuck(item) -> bool:
         return (
             item["status"] == "downloading"
             and item["size"] > 0
@@ -67,7 +70,7 @@ class RemoveSlow(RemovalJob):
 
         download_progress = self._get_download_progress(item, download_id)
         previous_progress, increment, speed = self._compute_increment_and_speed(
-            download_id, download_progress
+            download_id, download_progress,
         )
 
         self.arr.tracker.download_progress[download_id] = download_progress
@@ -83,15 +86,18 @@ class RemoveSlow(RemovalJob):
                     return progress
         return self._fallback_progress(item)
 
-    def _try_get_qbit_progress(self, qbit, download_id):
+    @staticmethod
+    def _try_get_qbit_progress(qbit, download_id):
+        # noinspection PyBroadException
         try:
             return qbit.get_download_progress(download_id)
-        except Exception:
+        except Exception:  # noqa: BLE001
             return None
 
-    def _fallback_progress(self, item):
+    @staticmethod
+    def _fallback_progress(item):
         logger.debug(
-            "get_progress_stats: Using imprecise method to determine download increments because either a different download client than qBitorrent is used, or the download client name in the config does not match with what is configured in your *arr download client settings"
+            "get_progress_stats: Using imprecise method to determine download increments because either a different download client than qBitorrent is used, or the download client name in the config does not match with what is configured in your *arr download client settings",
         )
         return item["size"] - item["sizeleft"]
 

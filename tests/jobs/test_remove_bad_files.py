@@ -1,6 +1,7 @@
+from pathlib import Path
 from unittest.mock import MagicMock, AsyncMock
-import os
 import pytest
+
 from src.jobs.remove_bad_files import RemoveBadFiles
 
 # Fixture for arr mock
@@ -35,14 +36,15 @@ def test_is_bad_extension(removal_job, file_name, expected_result, keep_archives
 
     # Act
     file = {"name": file_name}  # Simulating a file object
-    file["file_extension"] = os.path.splitext(file["name"])[1].lower()
+    file["file_extension"] = Path(file["name"]).suffix.lower()
     result = removal_job._is_bad_extension(file)  # pylint: disable=W0212
 
     # Assert
     assert result == expected_result
 
+
 @pytest.mark.parametrize(
-    "name, size_bytes, expected_result",
+    ("name", "size_bytes", "expected_result"),
     [
         ("My.Movie.2024.2160/Subfolder/sample.mkv", 100 * 1024, True),           # 100 KB, 'sample' keyword in filename
         ("My.Movie.2024.2160/Subfolder/Sample.mkv", 100 * 1024, True),           # 100 KB, case-insensitive match
@@ -69,16 +71,16 @@ def test_contains_bad_keyword(removal_job, name, size_bytes, expected_result):
 
 
 @pytest.mark.parametrize(
-    "file, is_incomplete_partial",
+    ("file", "is_incomplete_partial"),
     [
         ({"availability": 1, "progress": 1}, False),  # Fully available
         ({"availability": 0.5, "progress": 0.5}, True),  # Low availability
-        ( {"availability": 0.5, "progress": 1}, False,),  # Downloaded, low availability
+        ({"availability": 0.5, "progress": 1}, False),  # Downloaded, low availability
         ({"availability": 0.9, "progress": 0.8}, True),  # Low availability
     ],
 )
 def test_is_complete_partial(removal_job, file, is_incomplete_partial):
-    """This test checks if the availability logic works correctly."""
+    """Check if the availability logic works correctly."""
     # Act
     result = removal_job._is_complete_partial(file)  # pylint: disable=W0212
 
@@ -87,7 +89,7 @@ def test_is_complete_partial(removal_job, file, is_incomplete_partial):
 
 
 @pytest.mark.parametrize(
-    "qbit_item, expected_processed",
+    ("qbit_item", "expected_processed"),
     [
         # Case 1: Torrent without metadata
         (
@@ -181,7 +183,7 @@ async def test_get_items_to_process(qbit_item, expected_processed, removal_job):
     # Act
     processed_items = removal_job._get_items_to_process( # pylint: disable=W0212
         [qbit_item]
-    )  
+    )
 
     # Extract the hash from the processed items
     processed_hashes = [item["hash"] for item in processed_items]
@@ -194,7 +196,7 @@ async def test_get_items_to_process(qbit_item, expected_processed, removal_job):
 
 
 @pytest.mark.parametrize(
-    "file, should_be_stoppable",
+    ("file", "should_be_stoppable"),
     [
         # Stopped files - No need to stop again
         (
@@ -217,7 +219,7 @@ async def test_get_items_to_process(qbit_item, expected_processed, removal_job):
             },
             False,
         ),
-        # Bad file extension – Always stop (if not alredy stopped)
+        # Bad file extension - Always stop (if not alredy stopped)
         (
             {
                 "index": 0,
@@ -248,7 +250,7 @@ async def test_get_items_to_process(qbit_item, expected_processed, removal_job):
             },
             True,
         ),
-        # Good file extension – Stop only if availability < 1 **and** progress < 1
+        # Good file extension - Stop only if availability < 1 **and** progress < 1
         (
             {
                 "index": 0,
@@ -292,8 +294,8 @@ async def test_get_items_to_process(qbit_item, expected_processed, removal_job):
     ],
 )
 def test_get_stoppable_file_single(removal_job, file, should_be_stoppable):
-    # Add file_extension based on the file name 
-    file["file_extension"] = os.path.splitext(file["name"])[1].lower()
+    # Add file_extension based on the file name
+    file["file_extension"] = Path(file["name"]).suffix.lower()
     stoppable = removal_job._get_stoppable_files([file])  # pylint: disable=W0212
     is_stoppable = bool(stoppable)
     assert is_stoppable == should_be_stoppable
@@ -311,7 +313,7 @@ def fixture_torrent_files():
 
 
 @pytest.mark.parametrize(
-    "stoppable_indexes, all_files_stopped",
+    ("stoppable_indexes", "all_files_stopped"),
     [
         ([0], False),  # Case 1: Nothing changes (stopping an already stopped file)
         ([2], False),  # Case 2: One additional file stopped
@@ -320,7 +322,7 @@ def fixture_torrent_files():
     ],
 )
 def test_all_files_stopped(
-    removal_job, torrent_files, stoppable_indexes, all_files_stopped
+    removal_job, torrent_files, stoppable_indexes, all_files_stopped,
 ):
     # Create stoppable_files using only the index for each file and a dummy reason
     stoppable_files = [({"index": idx}, "some reason") for idx in stoppable_indexes]

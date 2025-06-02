@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta, timezone
+
 import dateutil.parser
 
 from src.utils.log_setup import logger
-from src.utils.wanted_manager import WantedManager
 from src.utils.queue_manager import QueueManager
+from src.utils.wanted_manager import WantedManager
 
 
 class SearchHandler:
@@ -21,10 +22,10 @@ class SearchHandler:
         wanted_items = await self._get_initial_wanted_items(search_type)
         if not wanted_items:
             return
-  
+
         logger.debug(f"search_handler.py/handle_search: Getting list of queue items to only search for items that are not already downloading.")
         queue = await QueueManager(self.arr, self.settings).get_queue_items(
-            queue_scope="normal"
+            queue_scope="normal",
         )
         wanted_items = self._filter_wanted_items(wanted_items, queue)
         if not wanted_items:
@@ -43,7 +44,8 @@ class SearchHandler:
             logger.verbose(f"Searching for unmet cutoff content on {self.arr.name}:")
             self.job = self.settings.jobs.search_unmet_cutoff_content
         else:
-            raise ValueError(f"Unknown search type: {search_type}")
+            error = f"Unknown search type: {search_type}"
+            raise ValueError(error)
 
     def _get_initial_wanted_items(self, search_type):
         wanted = self.wanted_manager.get_wanted_items(search_type)
@@ -54,13 +56,13 @@ class SearchHandler:
     def _filter_wanted_items(self, items, queue):
         items = self._filter_already_downloading(items, queue)
         if not items:
-            logger.verbose(f">>> All items already downloading, nothing to search for.")
+            logger.verbose(">>> All items already downloading, nothing to search for.")
             return []
 
         items = self._filter_recent_searches(items)
         if not items:
             logger.verbose(
-                f">>> All items recently searched for, thus not triggering another search."
+                ">>> All items recently searched for, thus not triggering another search.",
             )
             return []
 

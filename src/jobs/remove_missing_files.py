@@ -1,5 +1,6 @@
 from src.jobs.removal_job import RemovalJob
 
+
 class RemoveMissingFiles(RemovalJob):
     queue_scope = "normal"
     blocklist = False
@@ -8,12 +9,12 @@ class RemoveMissingFiles(RemovalJob):
         affected_items = []
 
         for item in self.queue:
-            if self._is_failed_torrent(item) or self._is_bad_nzb(item):
+            if self._is_failed_torrent(item) or self._no_elibible_import(item):
                 affected_items.append(item)
-
         return affected_items
 
-    def _is_failed_torrent(self, item):
+    @staticmethod
+    def _is_failed_torrent(item) -> bool:
         return (
             "status" in item
             and item["status"] == "warning"
@@ -25,7 +26,8 @@ class RemoveMissingFiles(RemovalJob):
             ]
         )
 
-    def _is_bad_nzb(self, item):
+    @staticmethod
+    def _no_elibible_import(item) -> bool:
         if "status" in item and item["status"] == "completed" and "statusMessages" in item:
             for status_message in item["statusMessages"]:
                 if "messages" in status_message:

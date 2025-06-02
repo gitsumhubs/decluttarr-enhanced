@@ -1,5 +1,5 @@
 [tool.pylint]
-ignore = ".venv"
+ignore = [".venv", "old"]
 ignore-patterns = ["__pycache__", ".pytest_cache"]
 disable = [
     "logging-fstring-interpolation",    # W1203
@@ -9,6 +9,7 @@ disable = [
     "missing-class-docstring",          # C0115
     "missing-function-docstring",       # C0116
     "line-too-long",                    # C0301
+    "too-few-public-methods",           # R0903
 ]
 
 [tool.pytest.ini_options]

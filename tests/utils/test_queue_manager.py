@@ -1,12 +1,12 @@
+from unittest.mock import Mock
 import pytest
 
-# Assuming your method is part of a class called QueueManager
 from src.utils.queue_manager import QueueManager
-from unittest.mock import Mock
+
 
 # ---------- Fixtures ----------
 @pytest.fixture(name="mock_queue_manager")
-def mock_queue_manager():
+def fixture_mock_queue_manager():
     mock_arr = Mock()
     mock_settings = Mock()
     return QueueManager(arr=mock_arr, settings=mock_settings)

@@ -1,6 +1,6 @@
 import logging
-import os
 from logging.handlers import RotatingFileHandler
+from pathlib import Path
 
 # Track added logging levels
 _added_levels = {}
@@ -9,7 +9,8 @@ _added_levels = {}
 def add_logging_level(level_name, level_num):
     """Dynamically add a custom logging level."""
     if level_name in _added_levels or level_num in _added_levels.values():
-        raise ValueError(f"Logging level '{level_name}' or number '{level_num}' already exists.")
+        error = f"Logging level '{level_name}' or number '{level_num}' already exists."
+        raise ValueError(error)
 
     logging.addLevelName(level_num, level_name.upper())
 
@@ -26,37 +27,37 @@ def add_logging_level(level_name, level_num):
 add_logging_level("TRACE", 5)
 add_logging_level("VERBOSE", 15)
 
-
 # Configure the default logger
 logger = logging.getLogger(__name__)
 
-def set_handler_format(log_handler, long_format = True):
+
+def set_handler_format(log_handler, *, long_format=True):
     if long_format:
         target_format = logging.Formatter("%(asctime)s | %(levelname)-7s | %(message)s", "%Y-%m-%d %H:%M:%S")
     else:
         target_format = logging.Formatter("%(levelname)-7s | %(message)s")
     log_handler.setFormatter(target_format)
 
+
 # Default console handler
 console_handler = logging.StreamHandler()
-set_handler_format(console_handler, long_format = True)
+set_handler_format(console_handler, long_format=True)
 logger.addHandler(console_handler)
 logger.setLevel(logging.INFO)
-
 
 
 def configure_logging(settings):
     """Add a file handler and adjust log levels for all handlers."""
     if settings.envs.in_docker:
-        set_handler_format(console_handler, long_format = False)
+        set_handler_format(console_handler, long_format=False)
 
     log_file = settings.paths.logs
-    log_dir = os.path.dirname(log_file)
-    os.makedirs(log_dir, exist_ok=True)
+    log_dir = Path(log_file).parent
+    Path(log_dir).mkdir(exist_ok=True, parents=True)
 
     # File handler
     file_handler = RotatingFileHandler(log_file, maxBytes=50 * 1024 * 1024, backupCount=2)
-    set_handler_format(file_handler, long_format = True)
+    set_handler_format(file_handler, long_format=True)
     logger.addHandler(file_handler)
 
     # Update log level for all handlers

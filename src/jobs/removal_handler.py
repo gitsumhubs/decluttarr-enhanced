@@ -1,5 +1,6 @@
 from src.utils.log_setup import logger
 
+
 class RemovalHandler:
     def __init__(self, arr, settings, job_name):
         self.arr = arr
@@ -53,12 +54,12 @@ class RemovalHandler:
         if affected_download['protocol'] != 'torrent':
             return "remove" # handling is only implemented for torrent
 
-        client_implemenation = await self.arr.get_download_client_implementation(affected_download['downloadClient'])
-        if client_implemenation != "QBittorrent":
+        client_implementation = await self.arr.get_download_client_implementation(affected_download['downloadClient'])
+        if client_implementation != "QBittorrent":
             return "remove" # handling is only implemented for qbit
 
         if len(self.settings.download_clients.qbittorrent) == 0:
-            return "remove" # qbit not configured, thus can't tag
+            return "remove"  # qbit not configured, thus can't tag
 
         if download_id in self.arr.tracker.private:
             return self.settings.general.private_tracker_handling

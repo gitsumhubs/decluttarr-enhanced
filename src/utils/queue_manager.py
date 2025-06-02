@@ -1,6 +1,6 @@
 import logging
-from src.utils.log_setup import logger
 from src.utils.common import make_request
+from src.utils.log_setup import logger
 
 
 class QueueManager:
@@ -10,7 +10,8 @@ class QueueManager:
 
     async def get_queue_items(self, queue_scope):
         """
-        Retrieves queue items based on the scope.
+        Retrieve queue items based on the scope.
+
         queue_scope:
             "normal" = normal queue
             "orphans" = orphaned queue items (in full queue but not in normal queue)
@@ -25,12 +26,13 @@ class QueueManager:
         elif queue_scope == "full":
             queue_items = await self._get_queue(full_queue=True)
         else:
-            raise ValueError(f"Invalid queue_scope: {queue_scope}")
+            error = f"Invalid queue_scope: {queue_scope}"
+            raise ValueError(error)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug("queue_manager.py/get_queue_items/queue (%s): %s", queue_scope, self.format_queue(queue_items))
         return queue_items
 
-    async def _get_queue(self, full_queue=False):
+    async def _get_queue(self, *, full_queue=False):
         # Step 1: Refresh the queue (now internal)
         await self._refresh_queue()
 
@@ -43,15 +45,14 @@ class QueueManager:
         # Step 4: Filter the queue based on delayed items and ignored download clients
         queue = self._filter_out_ignored_statuses(queue)
         queue = self._filter_out_ignored_download_clients(queue)
-        queue = self._add_detail_item_key(queue)
-        return queue
+        return self._add_detail_item_key(queue)
 
     def _add_detail_item_key(self, queue):
-        """Normalizes episodeID, bookID, etc so it can just be called by 'detail_item_id'"""
+        """Normalize episodeID, bookID, etc. so it can just be called by 'detail_item_id'."""
         for items in queue:
-            items["detail_item_id"] = items.get(self.arr.detail_item_id_key)  
+            items["detail_item_id"] = items.get(self.arr.detail_item_id_key)
         return queue
-                
+
     async def _refresh_queue(self):
         # Refresh the queue by making the POST request using an external make_request function
         await make_request(
@@ -88,7 +89,7 @@ class QueueManager:
         records = (
             await make_request(
                 method="GET",
-                endpoint=f"{self.arr.api_url}/queue", 
+                endpoint=f"{self.arr.api_url}/queue",
                 settings=self.settings,
                 params=params,
                 headers={"X-Api-Key": self.arr.api_key},
@@ -110,8 +111,7 @@ class QueueManager:
             list[dict]: Filtered queue.
         """
         if queue is None:
-            return queue
-
+            return None
         seen_combinations = set()
         filtered_queue = []
 
@@ -152,7 +152,7 @@ class QueueManager:
 
         return filtered_queue
 
-    def format_queue(self, queue_items):
+    def format_queue(self, queue_items) -> list | str:
         if not queue_items:
             return "empty"
         return self.group_by_download_id(queue_items)
@@ -192,3 +192,20 @@ class QueueManager:
                 }
 
         return grouped_dict
+
+    @staticmethod
+    def filter_queue_by_status(queue, statuses: list[str]) -> list[dict]:
+        """Filter queue items that match any of the given statuses."""
+        return [item for item in queue if item.get("status") in statuses]
+
+    @staticmethod
+    def filter_queue_by_status_and_error_message(queue, conditions: list[tuple[str, str]]) -> list[dict]:
+        """Filter queue items that match any given (status, errorMessage) pair."""
+        queue_items = []
+        for item in queue:
+            if "errorMessage" in item and "status" in item:
+                for status, message in conditions:
+                    if item["status"] == status and item["errorMessage"] == message:
+                        queue_items.append(item)
+                        break  # Stop checking other conditions once one matches
+        return queue_items

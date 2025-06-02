@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
-from src.utils.queue_manager import QueueManager
-from src.utils.log_setup import logger
-from src.jobs.strikes_handler import StrikesHandler
+
 from src.jobs.removal_handler import RemovalHandler
+from src.jobs.strikes_handler import StrikesHandler
+from src.utils.log_setup import logger
+from src.utils.queue_manager import QueueManager
 
 
 class RemovalJob(ABC):
@@ -16,14 +17,15 @@ class RemovalJob(ABC):
     queue = []
 
     # Default class attributes (can be overridden in subclasses)
-    def __init__(self, arr, settings, job_name):
+    def __init__(self, arr, settings, job_name) -> None:
         self.arr = arr
         self.settings = settings
         self.job_name = job_name
         self.job = getattr(self.settings.jobs, self.job_name)
         self.queue_manager = QueueManager(self.arr, self.settings)
 
-    async def run(self):
+
+    async def run(self) -> int:
         if not self.job.enabled:
             return 0
         logger.debug(f"removal_job.py/run: Launching job '{self.job_name}', and checking if any items in {self.queue_scope} queue.")
@@ -57,7 +59,8 @@ class RemovalJob(ABC):
 
     def _ignore_protected(self):
         """
-        Filters out downloads that are in the protected tracker.
+        Filter out downloads that are in the protected tracker.
+
         Directly updates self.affected_downloads.
         """
         self.affected_downloads = {
@@ -66,6 +69,6 @@ class RemovalJob(ABC):
             if download_id not in self.arr.tracker.protected
         }
 
-    @abstractmethod  # Imlemented on level of each removal job
-    async def _find_affected_items(self):
+    @abstractmethod  # Implemented on level of each removal job
+    async def _find_affected_items(self) -> None:
         pass
