@@ -1,5 +1,5 @@
 import logging
-from src.utils.common import make_request
+from src.utils.common import make_request, extract_json_from_response
 from src.utils.log_setup import logger
 
 
@@ -29,7 +29,11 @@ class QueueManager:
             error = f"Invalid queue_scope: {queue_scope}"
             raise ValueError(error)
         if logger.isEnabledFor(logging.DEBUG):
-            logger.debug("queue_manager.py/get_queue_items/queue (%s): %s", queue_scope, self.format_queue(queue_items))
+            logger.debug(
+                "queue_manager.py/get_queue_items/queue (%s): %s",
+                queue_scope,
+                self.format_queue(queue_items),
+            )
         return queue_items
 
     async def _get_queue(self, *, full_queue=False):
@@ -37,10 +41,10 @@ class QueueManager:
         await self._refresh_queue()
 
         # Step 2: Get the total number of records
-        record_count = await self._get_total_records(full_queue)
+        total_records_count = await self._get_total_records_count(full_queue)
 
         # Step 3: Get all records using `arr.full_queue_parameter`
-        queue = await self._get_arr_records(full_queue, record_count)
+        queue = await self._get_arr_records(full_queue, total_records_count)
 
         # Step 4: Filter the queue based on delayed items and ignored download clients
         queue = self._filter_out_ignored_statuses(queue)
@@ -63,41 +67,40 @@ class QueueManager:
             headers={"X-Api-Key": self.arr.api_key},
         )
 
-    async def _get_total_records(self, full_queue):
+    async def _get_total_records_count(self, full_queue):
         # Get the total number of records from the queue using `arr.full_queue_parameter`
         params = {self.arr.full_queue_parameter: full_queue}
-        response = (
-            await make_request(
-                method="GET",
-                endpoint=f"{self.arr.api_url}/queue",
-                settings=self.settings,
-                params=params,
-                headers={"X-Api-Key": self.arr.api_key},
-            )
-        ).json()
-        return response["totalRecords"]
+        total_records = await self.fetch_queue_field(params, key="totalRecords")
+        return total_records
 
-    async def _get_arr_records(self, full_queue, record_count):
+    async def _get_arr_records(self, full_queue, total_records_count):
         # Get all records based on the count (with pagination) using `arr.full_queue_parameter`
-        if record_count == 0:
+        if total_records_count == 0:
             return []
 
-        params = {"page": "1", "pageSize": record_count}
+        params = {"page": "1", "pageSize": total_records_count}
         if full_queue:
             params |= {self.arr.full_queue_parameter: full_queue}
 
-        records = (
-            await make_request(
-                method="GET",
-                endpoint=f"{self.arr.api_url}/queue",
-                settings=self.settings,
-                params=params,
-                headers={"X-Api-Key": self.arr.api_key},
-            )
-        ).json()
-        return records["records"]
+        records = await self.fetch_queue_field(params, key="records")
+        return records
 
-    def _filter_out_ignored_statuses(self, queue, ignored_statuses=("delay","downloadClientUnavailable")):
+
+    async def fetch_queue_field(self, params, key: str | None = None):
+        # Gets the response of the /queue endpoint and extracts a specific field from the json response
+        response = await make_request(
+            method="GET",
+            endpoint=f"{self.arr.api_url}/queue",
+            settings=self.settings,
+            params=params,
+            headers={"X-Api-Key": self.arr.api_key},
+        )
+        return extract_json_from_response(response, key=key)
+
+
+    def _filter_out_ignored_statuses(
+        self, queue, ignored_statuses=("delay", "downloadClientUnavailable")
+    ):
         """
         All matching items are removed from the queue. However, logging of ignored items
         is limited to one per (download title, protocol, indexer) combination to reduce log noise
@@ -125,13 +128,14 @@ class QueueManager:
             if status in ignored_statuses:
                 if combination not in seen_combinations:
                     seen_combinations.add(combination)
-                    logger.debug(f"queue_manager.py/_filter_out_ignored_statuses: Ignored queue item: {title} (Status: {status}, Protocol: {protocol}, Indexer: {indexer})")
+                    logger.debug(
+                        f"queue_manager.py/_filter_out_ignored_statuses: Ignored queue item: {title} (Status: {status}, Protocol: {protocol}, Indexer: {indexer})"
+                    )
                 continue
 
             filtered_queue.append(item)
 
         return filtered_queue
-
 
     def _filter_out_ignored_download_clients(self, queue):
         # Filters out ignored download clients
@@ -185,9 +189,7 @@ class QueueManager:
                 grouped_dict[download_id] = {
                     "queue_ids": [item_id],
                     **{
-                        key: queue_item[key]
-                        for key in retain_keys
-                        if key in queue_item
+                        key: queue_item[key] for key in retain_keys if key in queue_item
                     },
                 }
 
@@ -199,7 +201,9 @@ class QueueManager:
         return [item for item in queue if item.get("status") in statuses]
 
     @staticmethod
-    def filter_queue_by_status_and_error_message(queue, conditions: list[tuple[str, str]]) -> list[dict]:
+    def filter_queue_by_status_and_error_message(
+        queue, conditions: list[tuple[str, str]]
+    ) -> list[dict]:
         """Filter queue items that match any given (status, errorMessage) pair."""
         queue_items = []
         for item in queue:

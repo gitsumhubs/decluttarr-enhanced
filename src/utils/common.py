@@ -83,3 +83,21 @@ def wait_and_exit(seconds=30):
     logger.info(f"Decluttarr will wait for {seconds} seconds and then exit.")
     time.sleep(seconds)
     sys.exit()
+
+
+def extract_json_from_response(response, key: str | None = None):
+    try:
+        data = response.json()
+    except ValueError as e:
+        raise ValueError("Response content is not valid JSON") from e
+
+    if key is None:
+        return data
+
+    if not isinstance(data, dict):
+        raise ValueError("Response JSON is not a dictionary, cannot extract key")
+
+    if key not in data:
+        raise ValueError(f"Key '{key}' not found in API response")
+
+    return data[key]

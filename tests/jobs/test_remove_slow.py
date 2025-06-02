@@ -5,7 +5,7 @@ from tests.jobs.utils import shared_fix_affected_items, shared_test_affected_ite
 from src.jobs.remove_slow import RemoveSlow
 
 
-@pytest.mark.asynciox
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("item", "expected_result"),
     [

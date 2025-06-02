@@ -10,6 +10,9 @@ disable = [
     "missing-function-docstring",       # C0116
     "line-too-long",                    # C0301
     "too-few-public-methods",           # R0903
+    "too-many-instance-attributes",     # R0902
+    "too-many-arguments",               # R0913
+    "too-many-positional-arguments",    # R0917
 ]
 
 [tool.pytest.ini_options]

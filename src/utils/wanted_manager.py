@@ -1,4 +1,4 @@
-from src.utils.common import make_request
+from src.utils.common import make_request, extract_json_from_response
 
 
 class WantedManager:
@@ -12,39 +12,34 @@ class WantedManager:
 
         missing_or_cutoff: Drives whether missing or cutoff items are retrieved
         """
-        record_count = await self._get_total_records(missing_or_cutoff)
-        return await self._get_arr_records(missing_or_cutoff, record_count)
+        total_records_count = await self._get_total_records_count(missing_or_cutoff)
+        return await self._get_arr_records(missing_or_cutoff, total_records_count)
 
-    async def _get_total_records(self, missing_or_cutoff):
-        # Get the total number of records from wanted
-        response = (
-            await make_request(
-                method="GET",
-                endpoint=f"{self.arr.api_url}/wanted/{missing_or_cutoff}",
-                settings=self.settings,
-                headers={"X-Api-Key": self.arr.api_key},
-            )
-        ).json()
-        return response["totalRecords"]
+    async def _get_total_records_count(self, missing_or_cutoff: str) -> int:
+        total_records = await self.fetch_wanted_field(missing_or_cutoff, key="totalRecords")
+        return total_records
 
-    async def _get_arr_records(self, missing_or_cutoff, record_count):
+    async def _get_arr_records(self, missing_or_cutoff, total_records_count):
         # Get all records based on the count (with pagination)
-        if record_count == 0:
+        if total_records_count == 0:
             return []
 
         sort_key = f"{self.arr.detail_item_key}s.lastSearchTime"
-        params = {"page": "1", "pageSize": record_count, "sortKey": sort_key}
+        params = {"page": "1", "pageSize": total_records_count, "sortKey": sort_key}
 
-        records = (
-            await make_request(
-                method="GET",
-                endpoint=f"{self.arr.api_url}/wanted/{missing_or_cutoff}",
-                settings=self.settings,
-                params=params,
-                headers={"X-Api-Key": self.arr.api_key},
-            )
-        ).json()
-        return records["records"]
+        records = await self.fetch_wanted_field(missing_or_cutoff, params=params, key="records")
+        return records
+
+    async def fetch_wanted_field(self, missing_or_cutoff: str, params: dict | None = None, key: str | None = None):
+        # Gets the response of the /queue endpoint and extracts a specific field from the json response
+        response = await make_request(
+            method="GET",
+            endpoint=f"{self.arr.api_url}/wanted/{missing_or_cutoff}",
+            settings=self.settings,
+            params=params,
+            headers={"X-Api-Key": self.arr.api_key},
+        )
+        return extract_json_from_response(response, key=key)
 
     async def search_items(self, detail_ids):
         """Search items by detail IDs."""
