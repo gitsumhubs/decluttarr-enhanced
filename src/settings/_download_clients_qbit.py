@@ -1,7 +1,7 @@
 from packaging import version
 
 from src.settings._constants import ApiEndpoints, MinVersions
-from src.utils.common import make_request, wait_and_exit
+from src.utils.common import make_request, wait_and_exit, extract_json_from_response
 from src.utils.log_setup import logger
 
 
@@ -37,6 +37,7 @@ class QbitClient:
 
     cookie: dict[str, str] = None
     version: str = None
+    bandwidth_usage: int = 0
 
     def __init__(
         self,
@@ -172,7 +173,10 @@ class QbitClient:
             )
             endpoint = f"{self.api_url}/app/preferences"
             response = await make_request(
-                "get", endpoint, self.settings, cookies=self.cookie,
+                "get",
+                endpoint,
+                self.settings,
+                cookies=self.cookie,
             )
             qbit_settings = response.json()
 
@@ -255,6 +259,7 @@ class QbitClient:
         # Continue with other setup tasks regardless of version check result
         await self.create_required_tags()
         await self.set_unwanted_folder()
+        await self.warn_no_bandwidth_limit_set()
 
     async def get_protected_and_private(self):
         """Fetch torrents from qBittorrent and checks for protected and private status."""
@@ -335,7 +340,7 @@ class QbitClient:
             cookies=self.cookie,
         )
 
-    async def get_download_progress(self, download_id):
+    async def fetch_download_progress(self, download_id):
         items = await self.get_qbit_items(download_id)
         return items[0]["completed"]
 
@@ -383,3 +388,33 @@ class QbitClient:
             data=data,
             cookies=self.cookie,
         )
+
+    async def set_bandwidth_usage(self):
+        # Gets the current overall bandwidth consumption
+        logger.debug("_download_clients_qBit/get_bandwidth_usage")
+        response = await make_request(
+            method="get",
+            endpoint=self.api_url + "/transfer/info",
+            settings=self.settings,
+            cookies=self.cookie,
+        )
+        records = extract_json_from_response(response)
+        limit = records["dl_rate_limit"]
+        speed = records["dl_info_speed"]
+        if limit == 0:
+            self.bandwidth_usage = 0
+        else:
+            self.bandwidth_usage = speed / limit
+        return limit, speed
+
+    async def warn_no_bandwidth_limit_set(self):
+        logger.debug("_download_clients_qBit/warn_no_bandwidth_limit_set")
+        if self.settings.jobs.remove_slow.enabled:
+            limit, _ = await self.set_bandwidth_usage()
+            if limit == 0:
+                logger.info(
+                    "💡 Tip: No global download speed limit is set in your qBittorrent instance. "
+                    "If you configure one, the 'remove_slow' check will automatically disable itself "
+                    "when your bandwidth is fully utilized. This prevents slow downloads from being mistakenly removed — "
+                    "not because they lack seeds, but because your own download capacity is saturated."
+                )

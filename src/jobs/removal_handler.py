@@ -29,7 +29,7 @@ class RemovalHandler:
             # Print out detailed removal messages (if any)
             if "removal_messages" in affected_download:
                 for msg in affected_download["removal_messages"]:
-                    logger.info(msg)
+                    logger.verbose(msg)
 
             self.arr.tracker.deleted.append(download_id)
 

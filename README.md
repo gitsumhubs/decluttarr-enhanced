@@ -455,7 +455,11 @@ This is the interesting section. It defines which job you want decluttarr to run
 
 -   Steers whether slow downloads are removed from the queue
 -   Blocklisted: Yes
--   Note: Does not apply to usenet downloads (since there users pay for certain speed, slowness should not occur)
+-   Note: 
+      - Does not apply to usenet downloads (since there users pay for certain speed, slowness should not occur)
+      - Applies only if qBittorrent is configured: The remove_slow check is automatically temporarily disabled if qBittorrent is already using more than 80% of your available download bandwidth.
+        For this to work, you must set a Global Download Rate Limit in qBittorrent. Otherwise, unlimited capacity is assumed, and the auto-disable feature will never trigger.
+        Make sure to configure the limit in the correct place — either the standard or the alternative limits, depending on which one is active in your setup.
 -   Type: Boolean or Dict
 -   Permissible Values: 
       If bool: True, False 

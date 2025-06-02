@@ -1,6 +1,7 @@
 from src.jobs.removal_job import RemovalJob
 from src.utils.log_setup import logger
 
+DISABLE_OVER_BANDWIDTH_USAGE = 0.8
 
 class RemoveSlow(RemovalJob):
     queue_scope = "normal"
@@ -10,8 +11,12 @@ class RemoveSlow(RemovalJob):
         affected_items = []
         checked_ids = set()
 
+        # Refreshes bandwidth usage for each client
+        await self.add_download_client_to_queue_items()
+        await self.update_bandwidth_usage()
+
         for item in self.queue:
-            if not self._is_valid_item(item):
+            if not self._check_required_keys(item):
                 continue
 
             download_id = item["downloadId"]
@@ -29,8 +34,11 @@ class RemoveSlow(RemovalJob):
                 )
                 continue
 
+            if self._high_bandwidth_usage(download_client=item["download_client"], download_client_type=item["download_client_type"]):
+                continue
+
             downloaded, previous, increment, speed = await self._get_progress_stats(
-                item,
+                item
             )
             if self._is_slow(speed):
                 affected_items.append(item)
@@ -43,8 +51,8 @@ class RemoveSlow(RemovalJob):
         return affected_items
 
     @staticmethod
-    def _is_valid_item(item) -> bool:
-        required_keys = {"downloadId", "size", "sizeleft", "status", "protocol"}
+    def _check_required_keys(item) -> bool:
+        required_keys = {"downloadId", "size", "sizeleft", "status", "protocol", "download_client", "download_client_type"}
         return required_keys.issubset(item)
 
     @staticmethod
@@ -68,7 +76,7 @@ class RemoveSlow(RemovalJob):
     async def _get_progress_stats(self, item):
         download_id = item["downloadId"]
 
-        download_progress = self._get_download_progress(item, download_id)
+        download_progress = await self._get_download_progress(item, download_id)
         previous_progress, increment, speed = self._compute_increment_and_speed(
             download_id, download_progress,
         )
@@ -76,36 +84,53 @@ class RemoveSlow(RemovalJob):
         self.arr.tracker.download_progress[download_id] = download_progress
         return download_progress, previous_progress, increment, speed
 
-    def _get_download_progress(self, item, download_id):
-        download_client_name = item.get("downloadClient")
-        if download_client_name:
-            download_client, download_client_type = self.settings.download_clients.get_download_client_by_name(download_client_name)
-            if download_client_type == "qbitorrent":
-                progress = self._try_get_qbit_progress(download_client, download_id)
+
+    async def _get_download_progress(self, item, download_id):
+        # Grabs the progress from qbit if possible, else calculates it based on progress (imprecise)
+        if item["download_client_type"] == "qbittorrent":
+            try:
+                progress = await item["download_client"].fetch_download_progress(download_id)
                 if progress is not None:
                     return progress
-        return self._fallback_progress(item)
-
-    @staticmethod
-    def _try_get_qbit_progress(qbit, download_id):
-        # noinspection PyBroadException
-        try:
-            return qbit.get_download_progress(download_id)
-        except Exception:  # noqa: BLE001
-            return None
-
-    @staticmethod
-    def _fallback_progress(item):
-        logger.debug(
-            "get_progress_stats: Using imprecise method to determine download increments because either a different download client than qBitorrent is used, or the download client name in the config does not match with what is configured in your *arr download client settings",
-        )
+            except Exception:  # noqa: BLE001
+                pass  # fall back below
         return item["size"] - item["sizeleft"]
 
     def _compute_increment_and_speed(self, download_id, current_progress):
+        # Calculates the increment based on progress since last check
         previous_progress = self.arr.tracker.download_progress.get(download_id)
         if previous_progress is not None:
             increment = current_progress - previous_progress
             speed = round(increment / 1000 / (self.settings.general.timer * 60), 1)
         else:
+            # don't calculate a speed delta the first time a download comes up as it may not have done a full cycle
             increment = speed = None
         return previous_progress, increment, speed
+
+    @staticmethod
+    def _high_bandwidth_usage(download_client, download_client_type):
+        if download_client_type == "qbittorrent":
+            if download_client.bandwidth_usage > DISABLE_OVER_BANDWIDTH_USAGE:
+                return True
+        return False
+
+    async def add_download_client_to_queue_items(self):
+        # Adds the download client to the queue item
+        for item in self.queue:
+            download_client_name = item["downloadClient"]
+            download_client, download_client_type = self.settings.download_clients.get_download_client_by_name(download_client_name)
+            item["download_client"] = download_client
+            item["download_client_type"] = download_client_type
+
+
+    async def update_bandwidth_usage(self):
+        # Refreshes the current bandwidth usage for each client
+        processed_clients = set()
+
+        for item in self.queue:
+            download_client = item["download_client"]
+            if item["download_client"] in processed_clients:
+                continue
+            if item["download_client_type"] == "qbittorrent":
+                await download_client.set_bandwidth_usage()
+            processed_clients.add(item["download_client"])
