@@ -1,4 +1,8 @@
 import asyncio
+import signal
+import types
+import datetime
+import sys
 
 from src.job_manager import JobManager
 from src.settings.settings import Settings
@@ -8,7 +12,21 @@ from src.utils.startup import launch_steps
 settings = Settings()
 job_manager = JobManager(settings)
 
-# # Main function
+def terminate(sigterm: signal.SIGTERM, frame: types.FrameType) -> None:  # noqa: ARG001, pylint: disable=unused-argument
+
+    """Terminate cleanly. Needed for respecting 'docker stop'.
+
+    Args:
+    ----
+        sigterm (signal.Signal): The termination signal.
+        frame: The execution frame.
+
+    """
+
+    logger.info(f"Termination signal received at {datetime.datetime.now()}.")  # noqa: DTZ005
+    sys.exit(0)
+
+# Main function
 async def main():
     await launch_steps(settings)
 
@@ -33,4 +51,5 @@ async def main():
 
 
 if __name__ == "__main__":
+    signal.signal(signal.SIGTERM, terminate)
     asyncio.run(main())
