@@ -1,3 +1,4 @@
+import logging
 from src.utils.log_setup import logger
 
 
@@ -11,7 +12,8 @@ class StrikesHandler:
     def check_permitted_strikes(self, affected_downloads):
         recovered = self._recover_downloads(affected_downloads)
         affected_downloads = self._apply_strikes_and_filter(affected_downloads)
-        self.log_change(recovered, affected_downloads)
+        if logger.isEnabledFor(logging.DEBUG):
+            self.log_change(recovered, affected_downloads)
         return affected_downloads
 
     def log_change(self, recovered, affected):
