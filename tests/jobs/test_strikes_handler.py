@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -6,14 +6,14 @@ from src.jobs.strikes_handler import StrikesHandler
 
 
 @pytest.mark.parametrize(
-    ("current_hashes", "expected_remaining_in_tracker"),
+    ("before_recovery", "expected_remaining_in_tracker"),
     [
         ([], []),  # nothing active → all removed
         (["HASH1", "HASH2"], ["HASH1", "HASH2"]),  # both active → none removed
         (["HASH2"], ["HASH2"]),  # only HASH2 active → HASH1 removed
     ],
 )
-def test_recover_downloads(current_hashes, expected_remaining_in_tracker):
+def test_recover_downloads(before_recovery, expected_remaining_in_tracker):
     """Test if tracker correctly removes items (if recovered) and adds new ones."""
     # Fix
     tracker = MagicMock()
@@ -26,7 +26,7 @@ def test_recover_downloads(current_hashes, expected_remaining_in_tracker):
     arr = MagicMock()
     arr.tracker = tracker
     handler = StrikesHandler(job_name="remove_stalled", arr=arr, max_strikes=3)
-    affected_downloads = [(hash_id, {"title": "dummy"}) for hash_id in current_hashes]
+    affected_downloads = [(hash_id, {"title": "dummy"}) for hash_id in before_recovery]
 
     # Act
     handler._recover_downloads(affected_downloads)  # pylint: disable=W0212
@@ -42,7 +42,7 @@ def test_recover_downloads(current_hashes, expected_remaining_in_tracker):
     [
         (1, 3, False),  # Below limit   → should not be affected
         (2, 3, False),  # Below limit   → should not be affected
-        (3, 3, True),   # At limit, will be pushed over limit      → should not be affected
+        (3, 3, True),   # At limit, will be pushed over limit   → should be affected
         (4, 3, True),   # Over limit    → should be affected
     ],
 )
@@ -65,3 +65,34 @@ def test_apply_strikes_and_filter(strikes_before_increment, max_strikes, expecte
         assert "HASH1" in result
     else:
         assert "HASH1" not in result
+
+
+def test_log_change_logs_expected_strike_changes():
+    handler = StrikesHandler(job_name="remove_stalled", arr=MagicMock(), max_strikes=3)
+    handler.tracker = MagicMock()
+    handler.tracker.defective = {
+        "remove_stalled": {
+            "hash_new": {"title": "A", "strikes": 1},     # should show in added
+            "hash_inc": {"title": "B", "strikes": 2},     # should show in incremented
+        }
+    }
+
+    recovered = ["hash_old"]
+    affected = ["hash_gone"]
+
+    with patch("src.jobs.strikes_handler.logger") as mock_logger:
+        handler.log_change(recovered, affected)
+
+        mock_logger.debug.assert_called_once()
+        args, _ = mock_logger.debug.call_args
+
+        log_msg = args[0]
+        assert "Added" in log_msg
+        assert "Incremented" in log_msg
+        assert "Recovered" in log_msg
+        assert "Removed" in log_msg
+
+        assert "hash_new" in str(args)
+        assert "hash_inc" in str(args)
+        assert "hash_old" in str(args)
+        assert "hash_gone" in str(args)

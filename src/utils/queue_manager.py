@@ -17,6 +17,10 @@ class QueueManager:
             "orphans" = orphaned queue items (in full queue but not in normal queue)
             "full" = full queue
         """
+        logger.debug(
+            "queue_manager.py/get_queue_items (%s): Refreshing and fetching queue",
+            queue_scope,
+        )
         if queue_scope == "normal":
             queue_items = await self._get_queue(full_queue=False)
         elif queue_scope == "orphans":
@@ -30,7 +34,7 @@ class QueueManager:
             raise ValueError(error)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
-                "queue_manager.py/get_queue_items/queue (%s): %s",
+                "queue_manager.py/get_queue_items (%s): Current queue = %s",
                 queue_scope,
                 self.format_queue(queue_items),
             )
