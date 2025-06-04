@@ -521,7 +521,7 @@ Defines arr-instances on which download queue should be decluttered
 -   Keys per instance (all required)
     - base_url: URL under which the instance can be reached
     - api_key
--   Is Mandatory: No (Defaults to empty list()
+-   Is Mandatory: No (Defaults to empty list)
 
 #### Sonarr
 - Equivalent of [Radarr](#radarr)
@@ -547,9 +547,9 @@ For time being, only qbittorrent is supported.
 -   Type: List of qbit instances
 -   Keys per instance
     - base_url: URL under which the qbit can be reached (mandatory)
-      username: Optional - only needed if your qbit requires authentication (which you may not need if you have configured qbit in a way that it disables it for local connections)
-      password: Optional - see above
-      name: Optional. Needs to correspond with the name that you have set up in your Arr instance. Defaults to "qBittorrent"
+    - username: Optional - only needed if your qbit requires authentication (which you may not need if you have configured qbit in a way that it disables it for local connections)
+    - password: Optional - see above
+    - name: Optional. Needs to correspond with the name that you have set up in your Arr instance. Defaults to "qBittorrent"
 
 
 ## Disclaimer
