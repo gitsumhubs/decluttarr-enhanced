@@ -1,7 +1,6 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from src.jobs.strikes_handler import StrikesHandler
 
 
@@ -78,7 +77,7 @@ def test_log_change_logs_expected_strike_changes():
     }
 
     recovered = ["hash_old"]
-    affected = ["hash_gone"]
+    affected = {"hash_gone": {"title": "Gone"}}
 
     with patch("src.jobs.strikes_handler.logger") as mock_logger:
         handler.log_change(recovered, affected)
@@ -96,3 +95,53 @@ def test_log_change_logs_expected_strike_changes():
         assert "hash_inc" in str(args)
         assert "hash_old" in str(args)
         assert "hash_gone" in str(args)
+
+
+@pytest.mark.parametrize(
+    "max_strikes, initial_strikes, expected_removed_after_two_runs",
+    [
+        # max_strikes = 3
+        (3, 0, False),  # 0 → 1 → 2
+        (3, 1, False),  # 1 → 2 → 3
+        (3, 2, True),   # 2 → 3 → 4
+        (3, 3, True),   # 3 → 4 → 5
+
+        # max_strikes = 2
+        (2, 0, False),  # 0 → 1 → 2
+        (2, 1, True),   # 1 → 2 → 3
+        (2, 2, True),   # 2 → 3 → 4
+        (2, 3, True),   # 3 → 4 → 5
+    ]
+)
+def test_strikes_handler_overall(max_strikes, initial_strikes, expected_removed_after_two_runs):
+    """
+    Verify that incrementing of strikes works and that 
+    based on its initial strikes and the max_strikes limit
+    removal happens
+    Note: The logging output does not show the strike where the removal will be triggered (ie., 4/3 if max strikes = 3)
+    Reason: This is on verbose-level, as instead the removal handler then shows another info-level log
+    """
+    job_name = "remove_stalled"
+    d_id = "some_hash"
+
+    tracker_mock = MagicMock()
+    tracker_mock.defective = {
+        job_name: {
+            d_id: {"title": "Some Title", "strikes": initial_strikes}
+        }
+    }
+
+    arr = MagicMock()
+    arr.tracker = tracker_mock
+
+    affected_downloads = {d_id: {"title": "Some Title"}}
+
+    handler = StrikesHandler(job_name=job_name, arr=arr, max_strikes=max_strikes)
+    handler.check_permitted_strikes(affected_downloads.copy())
+    handler = StrikesHandler(job_name=job_name, arr=arr, max_strikes=max_strikes)
+    result = handler.check_permitted_strikes(affected_downloads.copy())
+
+    assert (d_id in result) == expected_removed_after_two_runs, (
+        f"Expected removed={expected_removed_after_two_runs} for "
+        f"initial_strikes={initial_strikes}, max_strikes={max_strikes}, but got {d_id in result}"
+    )

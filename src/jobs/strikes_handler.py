@@ -16,7 +16,7 @@ class StrikesHandler:
             self.log_change(recovered, affected_downloads)
         return affected_downloads
 
-    def log_change(self, recovered, affected):
+    def log_change(self, recovered, affected_items):
         tracker = self.tracker.defective[self.job_name]
 
         added = []
@@ -28,7 +28,7 @@ class StrikesHandler:
             elif entry["strikes"] > 1:
                 incremented.append(d_id)
 
-        removed = [d_id for d_id in affected]
+        removed = list(affected_items.keys())
         logger.debug(
             "Strike status changed | Added: %s | Incremented: %s | Recovered: %s | Removed: %s",
             added or "None",
@@ -36,6 +36,7 @@ class StrikesHandler:
             recovered or "None",
             removed or "None",
         )
+        return added, incremented, recovered, removed
 
     def _recover_downloads(self, affected_downloads):
         recovered = [
