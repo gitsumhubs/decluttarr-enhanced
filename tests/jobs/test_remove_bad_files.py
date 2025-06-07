@@ -8,8 +8,6 @@ from src.jobs.remove_bad_files import RemoveBadFiles
 @pytest.fixture(name="removal_job")
 def fixture_removal_job():
     arr = AsyncMock()
-    arr.get_download_client_implementation.return_value = "QBittorrent"
-
     removal_job = RemoveBadFiles(arr=arr, settings=MagicMock(), job_name="test")
     removal_job.arr = arr
     removal_job.job = MagicMock()

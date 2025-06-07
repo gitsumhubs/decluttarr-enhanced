@@ -9,7 +9,7 @@ from src.settings._constants import (
     FullQueueParameter,
     MinVersions,
 )
-from src.utils.common import make_request, wait_and_exit
+from src.utils.common import make_request, wait_and_exit, extract_json_from_response
 from src.utils.log_setup import logger
 
 
@@ -66,17 +66,17 @@ class Instances:
     def config_as_yaml(self, *, hide_internal_attr=True):
         """Log all configured Arr instances while masking sensitive attributes."""
         internal_attributes = {
-                        "settings",
-                        "api_url",
-                        "min_version",
-                        "arr_type",
-                        "full_queue_parameter",
-                        "monitored_item",
-                        "detail_item_key",
-                        "detail_item_id_key",
-                        "detail_item_ids_key",
-                        "detail_item_search_command",
-                    }
+            "settings",
+            "api_url",
+            "min_version",
+            "arr_type",
+            "full_queue_parameter",
+            "monitored_item",
+            "detail_item_key",
+            "detail_item_id_key",
+            "detail_item_ids_key",
+            "detail_item_search_command",
+        }
 
         outputs = []
         for arr_type in ["sonarr", "radarr", "readarr", "lidarr", "whisparr"]:
@@ -207,17 +207,25 @@ class ArrInstance:
     async def _check_reachability(self):
         """Check if ARR instance is reachable."""
         try:
-            logger.debug("_instances.py/_check_reachability: Checking if arr instance is reachable")
+            logger.debug(
+                "_instances.py/_check_reachability: Checking if arr instance is reachable"
+            )
             endpoint = self.api_url + "/system/status"
             headers = {"X-Api-Key": self.api_key}
             response = await make_request(
-                "get", endpoint, self.settings, headers=headers, log_error=False,
+                "get",
+                endpoint,
+                self.settings,
+                headers=headers,
+                log_error=False,
             )
             return response.json()
         except Exception as e:
             if isinstance(e, requests.exceptions.HTTPError):
                 response = getattr(e, "response", None)
-                if response is not None and response.status_code == 401:  # noqa: PLR2004
+                if (
+                    response is not None and response.status_code == 401
+                ):  # noqa: PLR2004
                     tip = "💡 Tip: Have you configured the API_KEY correctly?"
                 else:
                     tip = f"💡 Tip: HTTP error occurred. Status: {getattr(response, 'status_code', 'unknown')}"
@@ -241,32 +249,76 @@ class ArrInstance:
             # Display result
             logger.info(f"OK | {self.name} ({self.base_url})")
             logger.debug(f"Current version of {self.name}: {self.version}")
+            await self._check_matching_decluttarr_download_clients()
 
         except Exception as e:  # noqa: BLE001
             if not isinstance(e, ArrError):
                 logger.error(f"Unhandled error: {e}", exc_info=True)
             wait_and_exit()
 
-    async def get_download_client_implementation(self, download_client_name):
-        """Fetch download client information and return the implementation value."""
-        logger.debug("_instances.py/get_download_client_implementation: Checking type of download client type by download client name")
+    async def fetch_arr_download_clients(self) -> list[dict[str, object]]:
+        """Fetch the list of download clients from the *arr API."""
+        logger.debug(
+            "_instances.py/fetch_download_clients: Fetching download client list from arr API"
+        )
         endpoint = self.api_url + "/downloadclient"
         headers = {"X-Api-Key": self.api_key}
 
-        # Fetch the download client list from the API
         response = await make_request("get", endpoint, self.settings, headers=headers)
+        return extract_json_from_response(response)
 
-        # Check if the response is a list
-        download_clients = response.json()
+    async def _check_matching_decluttarr_download_clients(self):
+        """Checks if there are any matching decluttarr settings for the download clients present in the arr"""
+        arr_download_clients = await self.fetch_arr_download_clients()
+        download_clients = self.settings.download_clients
+        for arr_download_client in arr_download_clients:
+            # Check if the download client in arr corresponds to one that decluttarr supports
+            arr_download_client_name = arr_download_client.get("name")
+            arr_implementation = arr_download_client.get("implementation")
+            download_client_type = (
+                download_clients.get_download_client_type_from_implementation(
+                    arr_implementation
+                )
+            )
+            # If it is supported, check if there are any configured in decluttarr that match on the name
+            if download_client_type:
+                download_client, _ = download_clients.get_download_client_by_name(
+                    name=arr_download_client_name,
+                    download_client_type=download_client_type,
+                )
+                if not download_client:
+                    download_client_list = download_clients.list_download_clients().get(
+                        download_client_type
+                    )
+                    if not download_client_list:
+                        tip = (
+                            f"💡 Tip: In your {self.name} settings, you have a {download_client_type} download client configured named '{arr_download_client_name}'.\n"
+                            "However, in your decluttarr settings under 'download_clients', there is nothing configured.\n"
+                            "Adding a matching entry to your decluttarr settings will enable you to fully leverage the features and benefits that decluttarr brings."
+                        )
+                    else:
+                        tip = (
+                            f"💡 Tip: In your {self.name} settings, you have a {download_client_type} download client configured named '{arr_download_client_name}'.\n"
+                            "However, in your decluttarr settings under 'download_clients', there is no entry that matches this name.\n"
+                            "Adding a matching entry to your decluttarr settings will enable you to fully leverage the features and benefits that decluttarr brings.\n"
+                            f"Currently, your configured download clients are: {download_client_list}"
+                        )
+                    logger.info(tip)
+        return
 
-        # Find the client where the name matches client_name
-        for client in download_clients:
-            if client.get("name") == download_client_name:
-                # Return the implementation value if found
-                return client.get("implementation", None)
-        return None
+    # async def get_download_client_implementation(self, download_client_name: str) -> str | None:
+    #     """Return the 'implementation' field of a specific download client by name."""
+    #     logger.debug("_instances.py/get_download_client_implementation: Looking up implementation for download client '%s'", download_client_name)
 
-    async def remove_queue_item(self, queue_id, *,  blocklist=False):
+    #     arr_download_clients = await self.fetch_arr_download_clients()
+
+    #     for arr_download_client in arr_download_clients:
+    #         if arr_download_client.get("name") == download_client_name:
+    #             return arr_download_client.get("implementation")
+
+    #     return None
+
+    async def remove_queue_item(self, queue_id, *, blocklist=False):
         """
         Remove a specific queue item from the queue by its queue id.
 
@@ -280,14 +332,20 @@ class ArrInstance:
             bool: Returns True if the removal was successful, False otherwise.
 
         """
-        logger.debug(f"_instances.py/remove_queue_item: Removing queue item, blocklist: {blocklist}")
+        logger.debug(
+            f"_instances.py/remove_queue_item: Removing queue item, blocklist: {blocklist}"
+        )
         endpoint = f"{self.api_url}/queue/{queue_id}"
         headers = {"X-Api-Key": self.api_key}
         json_payload = {"removeFromClient": True, "blocklist": blocklist}
 
         # Send the request to remove the download from the queue
         response = await make_request(
-            "delete", endpoint, self.settings, headers=headers, json=json_payload,
+            "delete",
+            endpoint,
+            self.settings,
+            headers=headers,
+            json=json_payload,
         )
 
         # If the response is successful, return True, else return False
