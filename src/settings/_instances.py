@@ -138,7 +138,6 @@ class ArrInstance:
 
     version: str = None
     name: str = None
-    tracker = Tracker()
 
     def __init__(self, settings, arr_type: str, base_url: str, api_key: str):
         if not base_url:
@@ -152,6 +151,7 @@ class ArrInstance:
             raise ValueError(error)
 
         self.settings = settings
+        self.tracker = Tracker()
         self.arr_type = arr_type
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
@@ -161,8 +161,6 @@ class ArrInstance:
         self.detail_item_key = getattr(DetailItemKey, arr_type)
         self.detail_item_id_key = self.detail_item_key + "Id"
         self.detail_item_ids_key = self.detail_item_key + "Ids"
-        self.detail_item_search_command = getattr(DetailItemSearchCommand, arr_type)
-
         self.detail_item_search_command = getattr(DetailItemSearchCommand, arr_type)
 
     async def _check_ui_language(self):
