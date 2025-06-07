@@ -16,62 +16,79 @@ class RemoveSlow(RemovalJob):
         await self.update_bandwidth_usage()
 
         for item in self.queue:
-            if not self._check_required_keys(item):
+
+            # Already checked downloadId -> skip
+            if self._checked_before(item, checked_ids):
                 continue
 
-            download_id = item["downloadId"]
+            # Keys not present -> skip
+            if self._missing_keys(item):
+                continue
 
-            if download_id in checked_ids:
-                continue  # One downloadId may occur in multiple items - only check once for all of them per iteration
-            checked_ids.add(download_id)
+            # Not Downloading -> skip
+            if self._not_downloading(item):
+                continue
 
+            # Is Usenet -> skip
             if self._is_usenet(item):
                 continue  # No need to check for speed for usenet, since there users pay for speed
 
+            # Completed but stuck -> skip
             if self._is_completed_but_stuck(item):
                 logger.info(
                     f">>> '{self.job_name}' detected download marked as slow as well as completed. Files most likely in process of being moved. Not removing: {item['title']}",
                 )
                 continue
 
-            if self._high_bandwidth_usage(download_client=item["download_client"], download_client_type=item["download_client_type"]):
+            # High bandwidth usage -> skip
+            if self._high_bandwidth_usage(item):
                 continue
 
             downloaded, previous, increment, speed = await self._get_progress_stats(
                 item
             )
-            if self._is_slow(speed):
-                affected_items.append(item)
-                logger.debug(
-                    f'remove_slow/slow speed detected: {item["title"]} '
-                    f"(Speed: {speed} KB/s, KB now: {downloaded}, KB previous: {previous}, "
-                    f"Diff: {increment}, In Minutes: {self.settings.general.timer})",
-                )
+
+            # Not slow -> skip
+            if self._not_slow(speed):
+                continue
+
+            # None of above, hence truly slow
+            affected_items.append(item)
+            logger.debug(
+                f'remove_slow/slow speed detected: {item["title"]} '
+                f"(Speed: {speed} KB/s, KB now: {downloaded}, KB previous: {previous}, "
+                f"Diff: {increment}, In Minutes: {self.settings.general.timer})",
+            )
 
         return affected_items
 
     @staticmethod
-    def _check_required_keys(item) -> bool:
+    def _checked_before(item, checked_ids):
+        download_id = item.get("downloadId", "None")
+        if download_id in checked_ids:
+            return True # One downloadId may occur in multiple items - only check once for all of them per iteration
+        checked_ids.add(download_id)
+        return False
+
+    @staticmethod
+    def _missing_keys(item) -> bool:
         required_keys = {"downloadId", "size", "sizeleft", "status", "protocol", "download_client", "download_client_type"}
-        return required_keys.issubset(item)
+        return not required_keys.issubset(item)
 
     @staticmethod
     def _is_usenet(item) -> bool:
         return item.get("protocol") == "usenet"
 
     @staticmethod
-    def _is_completed_but_stuck(item) -> bool:
-        return (
-            item["status"] == "downloading"
-            and item["size"] > 0
-            and item["sizeleft"] == 0
-        )
+    def _not_downloading(item) -> bool:
+        return item.get("status") != "downloading"
 
-    def _is_slow(self, speed):
-        return (
-            speed is not None
-            and speed < self.job.min_speed
-        )
+    @staticmethod
+    def _is_completed_but_stuck(item) -> bool:
+        return item["size"] > 0 and item["sizeleft"] == 0
+
+    def _not_slow(self, speed):
+        return speed is None or speed >= self.job.min_speed
 
     async def _get_progress_stats(self, item):
         download_id = item["downloadId"]
@@ -108,7 +125,9 @@ class RemoveSlow(RemovalJob):
         return previous_progress, increment, speed
 
     @staticmethod
-    def _high_bandwidth_usage(download_client, download_client_type):
+    def _high_bandwidth_usage(item):
+        download_client=item["download_client"]
+        download_client_type=item["download_client_type"]
         if download_client_type == "qbittorrent":
             if download_client.bandwidth_usage > DISABLE_OVER_BANDWIDTH_USAGE:
                 return True

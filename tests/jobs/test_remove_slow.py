@@ -6,6 +6,24 @@ from src.jobs.remove_slow import RemoveSlow
 
 
 # pylint: disable=W0212
+@pytest.mark.parametrize(
+    "checked_ids, item, expected_return, expected_checked_ids",
+    [
+        (set(), {"downloadId": "id1"}, False, {"id1"}),
+        ({"id1"}, {"downloadId": "id1"}, True, {"id1"}),
+        (set(), {"downloadId": "id2"}, False, {"id2"}),
+        (set(), {}, False, {"None"}),  # no downloadId key, treated as "None"
+        ({"None"}, {}, True, {"None"}),
+        ({"id1", "id2"}, {"downloadId": "id3"}, False, {"id1", "id2", "id3"}),
+        ({"id1", "id2"}, {"downloadId": "id1"}, True, {"id1", "id2"}),
+    ],
+)
+def test_checked_before(checked_ids, item, expected_return, expected_checked_ids):
+    result = RemoveSlow._checked_before(item, checked_ids)
+    assert result == expected_return
+    assert checked_ids == expected_checked_ids
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("item", "expected_result"),
@@ -21,7 +39,7 @@ from src.jobs.remove_slow import RemoveSlow
                 "download_client": AsyncMock(),
                 "download_client_type": "qBittorrent",
             },
-            True,
+            False,
         ),
         (
             # Invalid: missing one
@@ -33,7 +51,7 @@ from src.jobs.remove_slow import RemoveSlow
                 "protocol": "torrent",
                 "download_client": AsyncMock(),
             },
-            False,
+            True,
         ),
         (
             # Invalid: missing multiple
@@ -41,13 +59,27 @@ from src.jobs.remove_slow import RemoveSlow
                 "size": 1000,
                 "sizeleft": 500,
             },
-            False,
+            True,
         ),
     ],
 )
-async def test_check_required_keys(item, expected_result):
+async def test_missing_keys(item, expected_result):
     removal_job = shared_fix_affected_items(RemoveSlow)
-    result = removal_job._check_required_keys(item)
+    result = removal_job._missing_keys(item)
+    assert result == expected_result
+
+
+@pytest.mark.parametrize(
+    ("item", "expected_result"),
+    [
+        ({"status": "downloading"}, False),
+        ({"status": "completed"}, True),
+        ({"status": "paused"}, True),
+        ({}, True),  # no status key
+    ],
+)
+def test_not_downloading(item, expected_result):
+    result = RemoveSlow._not_downloading(item)
     assert result == expected_result
 
 
@@ -68,9 +100,9 @@ def test_is_usenet(item, expected_result):
 @pytest.mark.parametrize(
     ("item", "expected_result"),
     [
-        ({"status": "downloading", "size": 1000, "sizeleft": 0}, True),
-        ({"status": "completed", "size": 1000, "sizeleft": 0}, False),
-        ({"status": "downloading", "size": 0, "sizeleft": 0}, False),
+        ({"size": 1000, "sizeleft": 0}, True),
+        ({"size": 1000, "sizeleft": 1}, False),
+        ({"size": 0, "sizeleft": 0}, False),
     ],
 )
 def test_is_completed_but_stuck(item, expected_result):
@@ -82,17 +114,17 @@ def test_is_completed_but_stuck(item, expected_result):
 @pytest.mark.parametrize(
     ("speed", "expected_result"),
     [
-        (None, False),  # speed is None -> not slow
-        (0, True),  # speed less than min_speed -> slow (assuming min_speed > 0)
-        (5, True),  # speed less than min_speed
-        (10, False),  # speed equal or above min_speed (assuming min_speed=10)
-        (15, False),  # speed above min_speed
+        (None, True),  # speed is None -> not slow
+        (0, False),  # speed less than min_speed -> slow (assuming min_speed > 0)
+        (5, False),  # speed less than min_speed
+        (10, True),  # speed equal or above min_speed (assuming min_speed=10)
+        (15, True),  # speed above min_speed
     ],
 )
-def test_is_slow(speed, expected_result):
+def test_not_slow(speed, expected_result):
     removal_job = shared_fix_affected_items(RemoveSlow)
     removal_job.job.min_speed = 10
-    result = removal_job._is_slow(speed)
+    result = removal_job._not_slow(speed)
     assert result == expected_result
 
 
@@ -228,8 +260,11 @@ def test_high_bandwidth_usage(download_client_type, bandwidth_usage, expected):
         def __init__(self, usage):
             self.bandwidth_usage = usage
 
-    download_client = DummyClient(bandwidth_usage)
-    result = RemoveSlow._high_bandwidth_usage(download_client, download_client_type)
+    item = {
+        "download_client": DummyClient(bandwidth_usage),
+        "download_client_type": download_client_type,
+    }
+    result = RemoveSlow._high_bandwidth_usage(item)
     assert result == expected
 
 
@@ -299,26 +334,29 @@ async def test_update_bandwidth_usage_calls_once_per_client():
 @pytest.mark.parametrize(
     "queue_item, should_be_affected",
     [
-        # Keys not present -> skip
-        ({"downloadClient": "client1"}, False),
-
         # Already checked downloadId -> skip (simulate by repeating downloadId)
-        ({"downloadId": "checked_before", "download_client": MagicMock(), "download_client_type": "qbittorrent"}, False),
+        ({"downloadId": "checked_before"}, False),
+
+        # Keys not present -> skip
+        ({"downloadId": "keys_missing"}, False),
+
+        # Not Downloading -> skip
+        ({"downloadId": "not_downloading"}, False),
 
         # Is Usenet -> skip
-        ({"downloadId": "usenet", "download_client": MagicMock(), "download_client_type": "qbittorrent"}, False),
+        ({"downloadId": "usenet"}, False),
 
         # Completed but stuck -> skip
-        ({"downloadId": "stuck", "download_client": MagicMock(), "download_client_type": "qbittorrent"}, False),
+        ({"downloadId": "completed_but_stuck"}, False),
 
         # High bandwidth usage -> skip
-        ({"downloadId": "highbw", "download_client": MagicMock(), "download_client_type": "qbittorrent"}, False),
+        ({"downloadId": "high_bandwidth"}, False),
 
         # Not slow -> skip
-        ({"downloadId": "notslow", "download_client": MagicMock(), "download_client_type": "qbittorrent"}, False),
+        ({"downloadId": "not_slow"}, False),
 
-        # None of above, should be affected
-        ({"downloadId": "good", "title": "Good Item", "download_client": MagicMock(), "download_client_type": "qbittorrent"}, True),
+        # None of above, hence truly slow
+        ({"downloadId": "good"}, True),
     ],
 )
 async def test_find_affected_items_simple(queue_item, should_be_affected):
@@ -326,24 +364,19 @@ async def test_find_affected_items_simple(queue_item, should_be_affected):
     queue_item["title"] = queue_item.get("downloadId", "dummy")
     removal_job = shared_fix_affected_items(RemoveSlow, queue_data=[queue_item])
 
-    # Setup queue differently based on test case
-    if queue_item.get("downloadId") == "dup":
-        # Add duplicate entries to test skipping by checked_ids
-        removal_job.queue = [queue_item, queue_item]
-    else:
-        removal_job.queue = [queue_item]
-
-    # Mock methods
-    removal_job._check_required_keys = MagicMock(return_value="downloadId" in queue_item)
-    removal_job._is_usenet = MagicMock(return_value=queue_item.get("downloadId") == "usenet")
-    removal_job._is_completed_but_stuck = MagicMock(return_value=queue_item.get("downloadId") == "stuck")
-    removal_job._high_bandwidth_usage = MagicMock(return_value=queue_item.get("downloadId") == "highbw")
-    removal_job._get_progress_stats = AsyncMock(return_value=(1000, 900, 100, 10))  # arbitrary numbers
-    removal_job._is_slow = MagicMock(return_value=queue_item.get("downloadId") == "good")
-
-    # Mock add_download_client_to_queue_items and update_bandwidth_usage as no-ops
+    # Mock async methods
     removal_job.add_download_client_to_queue_items = AsyncMock()
     removal_job.update_bandwidth_usage = AsyncMock()
+    removal_job._get_progress_stats = AsyncMock(return_value=(1000, 900, 100, 10))
+
+    # Setup checks to pass except in for the designated tests
+    removal_job._checked_before = lambda item, checked_ids: item.get("downloadId") == "checked_before"
+    removal_job._missing_keys = lambda item: item.get("downloadId") == "keys_missing"
+    removal_job._not_downloading = lambda item: item.get("downloadId") == "not_downloading"
+    removal_job._is_usenet = lambda item: item.get("downloadId") == "usenet"
+    removal_job._is_completed_but_stuck = lambda item: item.get("downloadId") == "completed_but_stuck"
+    removal_job._high_bandwidth_usage = lambda download_client, download_client_type=None: queue_item.get("downloadId") == "high_bandwidth"
+    removal_job._not_slow = lambda speed: queue_item.get("downloadId") == "not_slow"
 
     # Run the method under test
     affected_items = await removal_job._find_affected_items()
