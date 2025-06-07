@@ -23,10 +23,11 @@ class StrikesHandler:
         incremented = []
 
         for d_id, entry in tracker.items():
-            if entry["strikes"] == 1:
+            strikes = entry["strikes"]
+            if strikes == 1:
                 added.append(d_id)
-            elif entry["strikes"] > 1:
-                incremented.append(d_id)
+            elif strikes > 1:
+                incremented.append(f"{d_id} ({strikes}x)")
 
         removed = list(affected_items.keys())
         logger.debug(

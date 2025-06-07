@@ -22,6 +22,9 @@ class QueueManager:
             "queue_manager.py/get_queue_items (%s): Refreshing and fetching queue",
             queue_scope,
         )
+
+        await self._refresh_queue()
+
         if queue_scope == "normal":
             queue_items = await self._get_queue(full_queue=False)
         elif queue_scope == "orphans":
@@ -34,24 +37,17 @@ class QueueManager:
             error = f"Invalid queue_scope: {queue_scope}"
             raise ValueError(error)
         if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(
-                "queue_manager.py/get_queue_items (%s): Current queue = %s",
-                queue_scope,
-                self.format_queue(queue_items),
-            )
+            logger.debug(f"queue_manager.py/get_queue_items ({queue_scope}): Current queue ({len(queue_items)} items) = {self.format_queue(queue_items)}")
         return queue_items
 
     async def _get_queue(self, *, full_queue=False):
-        # Step 1: Refresh the queue (now internal)
-        await self._refresh_queue()
-
-        # Step 2: Get the total number of records
+        # Step 1: Get the total number of records
         total_records_count = await self._get_total_records_count(full_queue)
 
-        # Step 3: Get all records using `arr.full_queue_parameter`
+        # Step 2: Get all records using `arr.full_queue_parameter`
         queue = await self._get_arr_records(full_queue, total_records_count)
 
-        # Step 4: Filter the queue based on delayed items and ignored download clients
+        # Step 3: Filter the queue based on delayed items and ignored download clients
         queue = self._filter_out_ignored_statuses(queue)
         queue = self._filter_out_ignored_download_clients(queue)
         return self._add_detail_item_key(queue)
@@ -64,6 +60,7 @@ class QueueManager:
 
     async def _refresh_queue(self):
         # Refresh the queue by making the POST request using an external make_request function
+        logger.debug("queue_manager.py/_refresh_queue: Refreshing Queue")
         await make_request(
             method="POST",
             endpoint=f"{self.arr.api_url}/command",
@@ -75,6 +72,7 @@ class QueueManager:
     async def _get_total_records_count(self, full_queue):
         # Get the total number of records from the queue using `arr.full_queue_parameter`
         params = {self.arr.full_queue_parameter: full_queue}
+        logger.debug("queue_manager.py/_get_total_records_count: Getting Total Records Count")
         total_records = await self.fetch_queue_field(params, key="totalRecords")
         return total_records
 
@@ -87,6 +85,7 @@ class QueueManager:
         if full_queue:
             params |= {self.arr.full_queue_parameter: full_queue}
 
+        logger.debug(f"queue_manager.py/_get_arr_records: Getting queue records ({total_records_count} items)")
         records = await self.fetch_queue_field(params, key="records")
         return records
 

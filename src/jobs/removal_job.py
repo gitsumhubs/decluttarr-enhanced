@@ -28,7 +28,7 @@ class RemovalJob(ABC):
     async def run(self) -> int:
         if not self.job.enabled:
             return 0
-        logger.debug(f"removal_job.py/run: Launching job '{self.job_name}', and checking if any items in {self.queue_scope} queue.")
+        logger.debug(f"removal_job.py/run: Launching job '{self.job_name}', and checking if any items in queue (queue_scope='{self.queue_scope}').")
         self.queue = await self.queue_manager.get_queue_items(queue_scope=self.queue_scope)
 
         # Handle empty queue

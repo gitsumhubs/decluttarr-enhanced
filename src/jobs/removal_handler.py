@@ -8,11 +8,12 @@ class RemovalHandler:
         self.job_name = job_name
 
     async def remove_downloads(self, affected_downloads, blocklist):
+        logger.debug(
+            "removal_handler.py/remove_downloads/arr.tracker.deleted IN: %s",
+            str(self.arr.tracker.deleted),
+        )
         for download_id in list(affected_downloads.keys()):
-            logger.debug(
-                "removal_handler.py/remove_downloads/arr.tracker.deleted IN: %s",
-                str(self.arr.tracker.deleted),
-            )
+
 
             affected_download = affected_downloads[download_id]
             handling_method = await self._get_handling_method(download_id, affected_download)
@@ -33,10 +34,10 @@ class RemovalHandler:
 
             self.arr.tracker.deleted.append(download_id)
 
-            logger.debug(
-                "removal_handler.py/remove_downloads/arr.tracker.deleted OUT: %s",
-                str(self.arr.tracker.deleted),
-            )
+        logger.debug(
+            "removal_handler.py/remove_downloads/arr.tracker.deleted OUT: %s",
+            str(self.arr.tracker.deleted),
+        )
 
 
     async def _remove_download(self, affected_download, blocklist):
