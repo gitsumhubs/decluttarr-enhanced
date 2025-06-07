@@ -9,4 +9,4 @@ class RemoveStalled(RemovalJob):
 
     async def _find_affected_items(self):
         conditions = [("warning", "The download is stalled with no connections")]
-        return self.queue_manager.filter_queue_by_status_and_error_message(self.queue, conditions)
+        return self.queue_manager.filter_queue(self.queue, conditions)

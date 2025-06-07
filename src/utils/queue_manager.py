@@ -1,4 +1,5 @@
 import logging
+from typing import Union
 from src.utils.common import make_request, extract_json_from_response
 from src.utils.log_setup import logger
 
@@ -199,21 +200,34 @@ class QueueManager:
 
         return grouped_dict
 
-    @staticmethod
-    def filter_queue_by_status(queue, statuses: list[str]) -> list[dict]:
-        """Filter queue items that match any of the given statuses."""
-        return [item for item in queue if item.get("status") in statuses]
 
     @staticmethod
-    def filter_queue_by_status_and_error_message(
-        queue, conditions: list[tuple[str, str]]
+    def filter_queue(
+        queue: list[dict],
+        conditions: list[Union[str, tuple[str, str]]],
     ) -> list[dict]:
-        """Filter queue items that match any given (status, errorMessage) pair."""
-        queue_items = []
+        """
+        Filter queue items by status or (status, errorMessage) pairs.
+
+        - If an entry in `conditions` is a string, only status is checked.
+        - If it's a (status, errorMessage) tuple, both must match.
+        """
+        filtered_items = []
         for item in queue:
-            if "errorMessage" in item and "status" in item:
-                for status, message in conditions:
-                    if item["status"] == status and item["errorMessage"] == message:
-                        queue_items.append(item)
-                        break  # Stop checking other conditions once one matches
-        return queue_items
+            item_status = item.get("status")
+            item_error = item.get("errorMessage")
+
+            for condition in conditions:
+                if isinstance(condition, str):
+                    if item_status == condition:
+                        filtered_items.append(item)
+                        break
+                elif (
+                    isinstance(condition, tuple)
+                    and len(condition) == 2
+                    and item_status == condition[0]
+                    and item_error == condition[1]
+                ):
+                    filtered_items.append(item)
+                    break
+        return filtered_items

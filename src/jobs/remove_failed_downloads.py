@@ -6,4 +6,4 @@ class RemoveFailedDownloads(RemovalJob):
     blocklist = False
 
     async def _find_affected_items(self):
-        return self.queue_manager.filter_queue_by_status(self.queue, ["failed"])
+        return self.queue_manager.filter_queue(self.queue, ["failed"])
