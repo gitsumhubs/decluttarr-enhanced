@@ -29,11 +29,11 @@ class QueueManager:
             queue_items = await self._get_queue(full_queue=False)
         elif queue_scope == "orphans":
             full_queue = await self._get_queue(full_queue=True)
-            queue = await self._get_queue(full_queue=False)
+            normal_queue = await self._get_queue(full_queue=False)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f"queue_manager.py/get_queue_items (full) to determine orphans: Current queue ({len(full_queue)} items) = {self.format_queue(full_queue)}")
-                logger.debug(f"queue_manager.py/get_queue_items (normal) to determine orphans: Current queue ({len(queue)} items) = {self.format_queue(queue)}")
-            queue_items = [fq for fq in full_queue if fq not in queue]
+                logger.debug(f"queue_manager.py/get_queue_items (normal) to determine orphans: Current queue ({len(normal_queue)} items) = {self.format_queue(normal_queue)}")
+            queue_items = [fq for fq in full_queue if fq not in normal_queue]
         elif queue_scope == "full":
             queue_items = await self._get_queue(full_queue=True)
         else:
