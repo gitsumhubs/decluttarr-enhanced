@@ -237,15 +237,15 @@ async def test_get_progress_stats(
 
 
 @pytest.mark.parametrize(
-    "download_client_type, bandwidth_usage, expected",
+    ("download_id", "download_client_type", "bandwidth_usage", "expected"),
     [
-        ("qbittorrent", 0.81, True),  # above threshold 0.8
-        ("qbittorrent", 0.8, False),  # equal to threshold 0.8
-        ("qbittorrent", 0.79, False),  # below threshold 0.8
-        ("other_client", 0.9, False),  # different client type
+        (0, "qbittorrent", 0.81, True),  # above threshold 0.8
+        (1, "qbittorrent", 0.8, False),  # equal to threshold 0.8
+        (2, "qbittorrent", 0.79, False),  # below threshold 0.8
+        (3, "other_client", 0.9, False),  # different client type
     ],
 )
-def test_high_bandwidth_usage(download_client_type, bandwidth_usage, expected):
+def test_high_bandwidth_usage(download_id, download_client_type, bandwidth_usage, expected):
     """
     Test RemoveSlow._high_bandwidth_usage method.
 
@@ -263,8 +263,10 @@ def test_high_bandwidth_usage(download_client_type, bandwidth_usage, expected):
     item = {
         "download_client": DummyClient(bandwidth_usage),
         "download_client_type": download_client_type,
+        "downloadId": download_id,
     }
-    result = RemoveSlow._high_bandwidth_usage(item)
+    removal_job = shared_fix_affected_items(RemoveSlow)
+    result = removal_job._high_bandwidth_usage(item)
     assert result == expected
 
 

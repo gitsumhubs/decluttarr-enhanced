@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from src.jobs.strikes_handler import StrikesHandler
 
-
+# pylint: disable=W0212
 @pytest.mark.parametrize(
     ("before_recovery", "expected_remaining_in_tracker"),
     [
@@ -31,24 +31,49 @@ def test_recover_downloads(before_recovery, expected_remaining_in_tracker):
     handler._recover_downloads(affected_downloads)  # pylint: disable=W0212
 
     # Assert
-    assert sorted(tracker.defective["remove_stalled"].keys()) == sorted(expected_remaining_in_tracker)
+    assert sorted(tracker.defective["remove_stalled"].keys()) == sorted(
+        expected_remaining_in_tracker
+    )
 
+def test_recover_downloads2_no_patch():
+    """Test if recovery correctly skips those items where tracking is paused."""
+    handler = StrikesHandler(
+        job_name="remove_stalled", arr=MagicMock(), max_strikes=3
+    )
+    handler.tracker = MagicMock()
+    handler.tracker.defective = {
+        "remove_stalled": {
+            "id1": {"title": "Title1", "tracking_paused": False},
+            "id2": {"title": "Title2", "tracking_paused": True},
+            "id3": {"title": "Title3"},  # no paused flag = False
+        }
+    }
 
-# ---------- Test ----------
+    affected_downloads = {"id3": {}}
+
+    recovered, paused = handler._recover_downloads(affected_downloads)
+
+    assert recovered == ["id1"]
+    assert paused == ["id2"]
+
 
 @pytest.mark.parametrize(
     ("strikes_before_increment", "max_strikes", "expected_in_affected_downloads"),
     [
         (1, 3, False),  # Below limit   → should not be affected
         (2, 3, False),  # Below limit   → should not be affected
-        (3, 3, True),   # At limit, will be pushed over limit   → should be affected
-        (4, 3, True),   # Over limit    → should be affected
+        (3, 3, True),  # At limit, will be pushed over limit   → should be affected
+        (4, 3, True),  # Over limit    → should be affected
     ],
 )
-def test_apply_strikes_and_filter(strikes_before_increment, max_strikes, expected_in_affected_downloads):
+def test_apply_strikes_and_filter(
+    strikes_before_increment, max_strikes, expected_in_affected_downloads
+):
     job_name = "remove_stalled"
     tracker = MagicMock()
-    tracker.defective = {job_name: {"HASH1": {"title": "dummy", "strikes": strikes_before_increment}}}
+    tracker.defective = {
+        job_name: {"HASH1": {"title": "dummy", "strikes": strikes_before_increment}}
+    }
 
     arr = MagicMock()
     arr.tracker = tracker
@@ -59,7 +84,9 @@ def test_apply_strikes_and_filter(strikes_before_increment, max_strikes, expecte
         "HASH1": {"title": "dummy"},
     }
 
-    result = handler._apply_strikes_and_filter(affected_downloads)  # pylint: disable=W0212
+    result = handler._apply_strikes_and_filter(
+        affected_downloads
+    )
     if expected_in_affected_downloads:
         assert "HASH1" in result
     else:
@@ -71,30 +98,29 @@ def test_log_change_logs_expected_strike_changes():
     handler.tracker = MagicMock()
     handler.tracker.defective = {
         "remove_stalled": {
-            "hash_new": {"title": "A", "strikes": 1},     # should show in added
-            "hash_inc": {"title": "B", "strikes": 2},     # should show in incremented
+            "hash_new": {"title": "A", "strikes": 1},  # should show in added
+            "hash_inc": {"title": "B", "strikes": 2},  # should show in incremented
+            "hash_paused": {"title": "C", "strikes": 2},  # should show in paused
         }
     }
-
     recovered = ["hash_old"]
+    paused = ["hash_paused"]
     affected = {"hash_gone": {"title": "Gone"}}
 
     with patch("src.jobs.strikes_handler.logger") as mock_logger:
-        handler.log_change(recovered, affected)
+        handler.log_change(recovered, paused, affected)
 
         mock_logger.debug.assert_called_once()
         args, _ = mock_logger.debug.call_args
 
         log_msg = args[0]
-        assert "Added" in log_msg
-        assert "Incremented" in log_msg
-        assert "Recovered" in log_msg
-        assert "Removed" in log_msg
+        # Check keywords in the message string
+        for keyword in ["Added", "Incremented", "Recovered", "Removed", "Paused"]:
+            assert keyword in log_msg
 
-        assert "hash_new" in str(args)
-        assert "hash_inc" in str(args)
-        assert "hash_old" in str(args)
-        assert "hash_gone" in str(args)
+        # Check keys in the entire call arguments (as string)
+        for key in ["hash_new", "hash_inc", "hash_old", "hash_gone", "hash_paused"]:
+            assert key in str(args)
 
 
 @pytest.mark.parametrize(
@@ -103,19 +129,20 @@ def test_log_change_logs_expected_strike_changes():
         # max_strikes = 3
         (3, 0, False),  # 0 → 1 → 2
         (3, 1, False),  # 1 → 2 → 3
-        (3, 2, True),   # 2 → 3 → 4
-        (3, 3, True),   # 3 → 4 → 5
-
+        (3, 2, True),  # 2 → 3 → 4
+        (3, 3, True),  # 3 → 4 → 5
         # max_strikes = 2
         (2, 0, False),  # 0 → 1 → 2
-        (2, 1, True),   # 1 → 2 → 3
-        (2, 2, True),   # 2 → 3 → 4
-        (2, 3, True),   # 3 → 4 → 5
-    ]
+        (2, 1, True),  # 1 → 2 → 3
+        (2, 2, True),  # 2 → 3 → 4
+        (2, 3, True),  # 3 → 4 → 5
+    ],
 )
-def test_strikes_handler_overall(max_strikes, initial_strikes, expected_removed_after_two_runs):
+def test_strikes_handler_overall(
+    max_strikes, initial_strikes, expected_removed_after_two_runs
+):
     """
-    Verify that incrementing of strikes works and that 
+    Verify that incrementing of strikes works and that
     based on its initial strikes and the max_strikes limit
     removal happens
     Note: The logging output does not show the strike where the removal will be triggered (ie., 4/3 if max strikes = 3)
@@ -126,9 +153,7 @@ def test_strikes_handler_overall(max_strikes, initial_strikes, expected_removed_
 
     tracker_mock = MagicMock()
     tracker_mock.defective = {
-        job_name: {
-            d_id: {"title": "Some Title", "strikes": initial_strikes}
-        }
+        job_name: {d_id: {"title": "Some Title", "strikes": initial_strikes}}
     }
 
     arr = MagicMock()

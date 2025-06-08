@@ -10,13 +10,13 @@ class StrikesHandler:
         self.tracker.defective.setdefault(job_name, {})
 
     def check_permitted_strikes(self, affected_downloads):
-        recovered = self._recover_downloads(affected_downloads)
+        recovered, paused = self._recover_downloads(affected_downloads)
         affected_downloads = self._apply_strikes_and_filter(affected_downloads)
         if logger.isEnabledFor(logging.DEBUG):
-            self.log_change(recovered, affected_downloads)
+            self.log_change(recovered, paused, affected_downloads)
         return affected_downloads
 
-    def log_change(self, recovered, affected_items):
+    def log_change(self, recovered, paused, affected_items):
         tracker = self.tracker.defective[self.job_name]
 
         added = []
@@ -31,28 +31,45 @@ class StrikesHandler:
 
         removed = list(affected_items.keys())
         logger.debug(
-            "Strike status changed | Added: %s | Incremented: %s | Recovered: %s | Removed: %s",
+            "Strike status changed | Added: %s | Incremented: %s | Recovered: %s | Tracking Paused: %s | Removed: %s",
             added or "None",
             incremented or "None",
             recovered or "None",
+            paused or "None",
             removed or "None",
         )
         return added, incremented, recovered, removed
 
     def _recover_downloads(self, affected_downloads):
-        recovered = [
-            d_id
-            for d_id in self.tracker.defective[self.job_name]
-            if d_id not in dict(affected_downloads)
-        ]
-        for d_id in recovered:
-            logger.info(
-                ">>> Download no longer marked as %s: %s",
-                self.job_name,
-                self.tracker.defective[self.job_name][d_id]["title"],
-            )
-            del self.tracker.defective[self.job_name][d_id]
-        return recovered
+        """
+        Identifies downloads that were previously tracked and are now no longer affected as recovered.
+        If a download is marked as tracking_paused, they are not recovered (will be recovered later potentially)
+        """
+        recovered = []
+        paused = []
+        job_tracker = self.tracker.defective[self.job_name]
+        affected_ids = dict(affected_downloads)
+
+        for d_id, entry in list(job_tracker.items()):
+            if d_id not in affected_ids:
+                if entry.get("tracking_paused", False):
+                    logger.debug(
+                        "strikes_handler.py/_recover_downloads: %s tracking is paused for this entry: %s (%s)",
+                        self.job_name,
+                        entry["title"],
+                        d_id,
+                    )
+                    paused.append(d_id)
+                else:
+                    logger.info(
+                        ">>> Download no longer marked as %s: %s",
+                        self.job_name,
+                        entry["title"],
+                    )
+                    recovered.append(d_id)
+                    del job_tracker[d_id]
+
+        return recovered, paused
 
     def _apply_strikes_and_filter(self, affected_downloads):
         for d_id, affected_download in list(affected_downloads.items()):
