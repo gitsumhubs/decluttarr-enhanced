@@ -128,13 +128,16 @@ class RemoveSlow(RemovalJob):
         download_id = item["downloadId"]
         tracker_entry = self.arr.tracker.defective[self.job_name].get(download_id)
         if tracker_entry:
-            tracker_entry["tracking_paused"] = False
+            tracker_entry.pop("tracking_paused", None)
+            tracker_entry.pop("pause_reason", None)
+
         download_client=item["download_client"]
         download_client_type=item["download_client_type"]
         if download_client_type == "qbittorrent":
             if download_client.bandwidth_usage > DISABLE_OVER_BANDWIDTH_USAGE:
                 if tracker_entry:
                     tracker_entry["tracking_paused"] = True
+                    tracker_entry["pause_reason"] = "High Bandwidth Usage"
                 return True
         return False
 

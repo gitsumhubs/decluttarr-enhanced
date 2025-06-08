@@ -35,6 +35,7 @@ def test_recover_downloads(before_recovery, expected_remaining_in_tracker):
         expected_remaining_in_tracker
     )
 
+
 def test_recover_downloads2_no_patch():
     """Test if recovery correctly skips those items where tracking is paused."""
     handler = StrikesHandler(
@@ -44,7 +45,7 @@ def test_recover_downloads2_no_patch():
     handler.tracker.defective = {
         "remove_stalled": {
             "id1": {"title": "Title1", "tracking_paused": False},
-            "id2": {"title": "Title2", "tracking_paused": True},
+            "id2": {"title": "Title2", "tracking_paused": True, "pause_reason": "manual"},
             "id3": {"title": "Title3"},  # no paused flag = False
         }
     }
@@ -54,7 +55,7 @@ def test_recover_downloads2_no_patch():
     recovered, paused = handler._recover_downloads(affected_downloads)
 
     assert recovered == ["id1"]
-    assert paused == ["id2"]
+    assert paused == {"id2": "manual"}
 
 
 @pytest.mark.parametrize(

@@ -17,6 +17,14 @@ class StrikesHandler:
         return affected_downloads
 
     def log_change(self, recovered, paused, affected_items):
+        """
+        Logs changes in strike tracking:
+        - Added = new items with 1 strike
+        - Incremented = items with >1 strike
+        - Recovered = items removed from the tracker
+        - Paused = items whose tracking is paused
+        - Removed = all affected item IDs
+        """
         tracker = self.tracker.defective[self.job_name]
 
         added = []
@@ -38,7 +46,7 @@ class StrikesHandler:
             paused or "None",
             removed or "None",
         )
-        return added, incremented, recovered, removed
+        return added, incremented, recovered, removed, paused
 
     def _recover_downloads(self, affected_downloads):
         """
@@ -46,20 +54,22 @@ class StrikesHandler:
         If a download is marked as tracking_paused, they are not recovered (will be recovered later potentially)
         """
         recovered = []
-        paused = []
+        paused = {}
         job_tracker = self.tracker.defective[self.job_name]
         affected_ids = dict(affected_downloads)
 
         for d_id, entry in list(job_tracker.items()):
             if d_id not in affected_ids:
                 if entry.get("tracking_paused", False):
+                    pause_reason = entry.get("pause_reason", None)
                     logger.debug(
-                        "strikes_handler.py/_recover_downloads: %s tracking is paused for this entry: %s (%s)",
+                        "strikes_handler.py/_recover_downloads: %s tracking is paused for this entry: %s (%s). Reason: %s",
                         self.job_name,
                         entry["title"],
                         d_id,
+                        pause_reason,
                     )
-                    paused.append(d_id)
+                    paused[d_id] = pause_reason
                 else:
                     logger.info(
                         ">>> Download no longer marked as %s: %s",
