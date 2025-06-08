@@ -1,3 +1,4 @@
+import logging
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -94,35 +95,34 @@ def test_apply_strikes_and_filter(
         assert "HASH1" not in result
 
 
-def test_log_change_logs_expected_strike_changes():
+def test_log_change_logs_expected_strike_changes(caplog):
     handler = StrikesHandler(job_name="remove_stalled", arr=MagicMock(), max_strikes=3)
     handler.tracker = MagicMock()
     handler.tracker.defective = {
         "remove_stalled": {
-            "hash_new": {"title": "A", "strikes": 1},  # should show in added
-            "hash_inc": {"title": "B", "strikes": 2},  # should show in incremented
+            "hash_new": {"title": "A", "strikes": 1},   # should show in added
+            "hash_inc": {"title": "B", "strikes": 2},   # should show in incremented
             "hash_paused": {"title": "C", "strikes": 2},  # should show in paused
         }
     }
+
     recovered = ["hash_old"]
     paused = ["hash_paused"]
     affected = {"hash_gone": {"title": "Gone"}}
 
-    with patch("src.jobs.strikes_handler.logger") as mock_logger:
+    with caplog.at_level(logging.DEBUG, logger="src.utils.log_setup"):
         handler.log_change(recovered, paused, affected)
 
-        mock_logger.debug.assert_called_once()
-        args, _ = mock_logger.debug.call_args
+    log_messages = "\n".join(record.message for record in caplog.records)
 
-        log_msg = args[0]
-        # Check keywords in the message string
-        for keyword in ["Added", "Incremented", "Recovered", "Removed", "Paused"]:
-            assert keyword in log_msg
+    # Check category keywords exist
+    for keyword in ["Added", "Incremented", "Recovered", "Removed", "Paused"]:
+        assert keyword in log_messages
 
-        # Check keys in the entire call arguments (as string)
-        for key in ["hash_new", "hash_inc", "hash_old", "hash_gone", "hash_paused"]:
-            assert key in str(args)
-
+    # Check actual IDs exist
+    for key in ["hash_new", "hash_inc", "hash_old", "hash_gone", "hash_paused"]:
+        assert key in log_messages
+    
 
 @pytest.mark.parametrize(
     "max_strikes, initial_strikes, expected_removed_after_two_runs",

@@ -1,7 +1,6 @@
 import logging
 from src.utils.log_setup import logger
 
-
 class StrikesHandler:
     def __init__(self, job_name, arr, max_strikes):
         self.job_name = job_name
@@ -35,15 +34,20 @@ class StrikesHandler:
             if strikes == 1:
                 added.append(d_id)
             elif strikes > 1:
-                incremented.append(f"{d_id} ({strikes}x)")
+                incremented.append(f"{d_id} ({strikes}/{self.max_strikes})")
 
         removed = list(affected_items.keys())
         logger.debug(
-            "Strike status changed | Added: %s | Incremented: %s | Recovered: %s | Tracking Paused: %s | Removed: %s",
+            "Strike status changed | %s Added: %s | %s Incremented (strikes): %s | %s Recovered: %s | %s Tracking Paused: %s | %s Removed: %s",
+            len(added) or 0,
             added or "None",
+            len(incremented) or 0,
             incremented or "None",
+            len(recovered) or 0,
             recovered or "None",
+            len(paused) or 0,
             paused or "None",
+            len(removed) or 0,
             removed or "None",
         )
         return added, incremented, recovered, removed, paused
