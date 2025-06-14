@@ -315,7 +315,7 @@ Below are **examples** how keys have changed.
 
 ### 🛠️ How to Migrate
 
-- Best approach: check the [Getting Started](https://github.com/ManiMatter/decluttarr/tree/decluttarr-v2?tab=readme-ov-file#getting-started) section and use the example configs as a starting point.
+- Best approach: check the [Getting Started](#getting-started) section and use the example configs as a starting point.
 
 
 ## Explanation of the settings
