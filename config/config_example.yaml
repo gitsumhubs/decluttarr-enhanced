@@ -23,6 +23,7 @@ jobs:
       - "Not a Custom Format upgrade for existing*"
       - "Not an upgrade for existing*"
       - "*Found potentially dangerous file with extension*"
+      - "Invalid video file*"
   remove_metadata_missing:
     # max_strikes: 3
   remove_missing_files:

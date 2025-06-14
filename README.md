@@ -225,6 +225,7 @@ services:
       #     - "Not a Custom Format upgrade for existing*"
       #     - "Not an upgrade for existing*"
       #     - "*Found potentially dangerous file with extension*"
+      #     - "Invalid video file*"
       # REMOVE_METADATA_MISSING: |
       #   max_strikes: 3
       # REMOVE_MISSING_FILES: True
