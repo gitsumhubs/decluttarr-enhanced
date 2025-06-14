@@ -1,7 +1,7 @@
 __pycache__/
 .pytest_cache/
-config/config.conf
 test*.py
 ToDo
 .vscode
-snip*.py
+.notebooks
+logs/*

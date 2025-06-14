@@ -1,10 +1,34 @@
 repos:
-  - repo: local
-    hooks:
-      - id: black
-        name: black
-        entry: venv/bin/black
-        language: system
-        types: [python]
+- repo: local
+  hooks:
+    - id: black
+      name: black
+      entry: |
+        bash -c 'BIN=".venv/bin/black"; 
+        [ ! -f "$BIN" ] && BIN=".venv/Scripts/black"; 
+        $BIN .'
+      language: system
 
+    - id: autoflake
+      name: autoflake
+      entry: |
+        bash -c 'BIN=".venv/bin/autoflake"; 
+        [ ! -f "$BIN" ] && BIN=".venv/Scripts/autoflake"; 
+        $BIN --in-place --remove-all-unused-imports --remove-unused-variables --recursive --exclude .venv .'
+      language: system
 
+    - id: isort
+      name: isort
+      entry: |
+        bash -c 'BIN=".venv/bin/isort"; 
+        [ ! -f "$BIN" ] && BIN=".venv/Scripts/isort"; 
+        $BIN -rc .'
+      language: system
+
+    - id: pylint
+      name: pylint
+      entry: |
+        bash -c 'BIN=".venv/bin/pylint"; 
+        [ ! -f "$BIN" ] && BIN=".venv/Scripts/pylint"; 
+        $BIN .'
+      language: system

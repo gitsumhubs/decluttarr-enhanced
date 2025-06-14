@@ -1,81 +1,44 @@
-from src.utils.shared import (
-    errorDetails,
-    formattedQueueInfo,
-    get_queue,
-    privateTrackerCheck,
-    protectedDownloadCheck,
-    execute_checks,
-    permittedAttemptsCheck,
-    remove_download,
-    qBitOffline,
-)
-import sys, os, traceback
-import logging, verboselogs
-
-logger = verboselogs.VerboseLogger(__name__)
+from src.jobs.removal_job import RemovalJob
 
 
-async def remove_missing_files(
-    settingsDict,
-    BASE_URL,
-    API_KEY,
-    NAME,
-    deleted_downloads,
-    defective_tracker,
-    protectedDownloadIDs,
-    privateDowloadIDs,
-):
-    # Detects downloads broken because of missing files. Does not add to blocklist
-    try:
-        failType = "missing files"
-        queue = await get_queue(BASE_URL, API_KEY, settingsDict)
-        logger.debug("remove_missing_files/queue IN: %s", formattedQueueInfo(queue))
-        if not queue:
-            return 0
-        if await qBitOffline(settingsDict, failType, NAME):
-            return 0
-        # Find items affected
-        affectedItems = []
-        for queueItem in queue:
-            if "status" in queueItem:
-                # case to check for failed torrents
-                if (
-                    queueItem["status"] == "warning"
-                    and "errorMessage" in queueItem
-                    and (
-                        queueItem["errorMessage"]
-                        == "DownloadClientQbittorrentTorrentStateMissingFiles"
-                        or queueItem["errorMessage"] == "The download is missing files"
-                        or queueItem["errorMessage"] == "qBittorrent is reporting missing files"
-                    )
-                ):
-                    affectedItems.append(queueItem)
-                # case to check for failed nzb's/bad files/empty directory
-                if queueItem["status"] == "completed" and "statusMessages" in queueItem:
-                    for statusMessage in queueItem["statusMessages"]:
-                        if "messages" in statusMessage:
-                            for message in statusMessage["messages"]:
-                                if message.startswith(
-                                    "No files found are eligible for import in"
-                                ):
-                                    affectedItems.append(queueItem)
-        affectedItems = await execute_checks(
-            settingsDict,
-            affectedItems,
-            failType,
-            BASE_URL,
-            API_KEY,
-            NAME,
-            deleted_downloads,
-            defective_tracker,
-            privateDowloadIDs,
-            protectedDownloadIDs,
-            addToBlocklist=False,
-            doPrivateTrackerCheck=True,
-            doProtectedDownloadCheck=True,
-            doPermittedAttemptsCheck=False,
+class RemoveMissingFiles(RemovalJob):
+    queue_scope = "normal"
+    blocklist = False
+
+    async def _find_affected_items(self):
+        affected_items = []
+
+        for item in self.queue:
+            if self._is_failed_torrent(item) or self._no_eligible_import(item):
+                affected_items.append(item)
+        return affected_items
+
+    @staticmethod
+    def _is_failed_torrent(item) -> bool:
+        return (
+            "status" in item
+            and item["status"] == "warning"
+            and "errorMessage" in item
+            and item["errorMessage"]
+            in [
+                "DownloadClientQbittorrentTorrentStateMissingFiles",
+                "The download is missing files",
+                "qBittorrent is reporting missing files",
+            ]
         )
-        return len(affectedItems)
-    except Exception as error:
-        errorDetails(NAME, error)
-        return 0
+
+    @staticmethod
+    def _no_eligible_import(item) -> bool:
+        if (
+            "status" in item
+            and item["status"] == "completed"
+            and "statusMessages" in item
+        ):
+            for status_message in item["statusMessages"]:
+                if "messages" in status_message:
+                    for message in status_message["messages"]:
+                        if message.startswith(
+                            "No files found are eligible for import in"
+                        ):
+                            return True
+        return False

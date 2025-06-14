@@ -1,7 +1,13 @@
 __pycache__/
 .pytest_cache/
 config/config.conf
+config/config.yaml
 ToDo 
 snip*.py
 venv
-testMagnets.txt
+.venv
+temp
+.notebooks
+**/old/
+logs/*
+.idea/*
