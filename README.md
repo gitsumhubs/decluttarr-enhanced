@@ -103,6 +103,11 @@ How to run this:
 ## Getting started
 
 You can run decluttarr either as local python script, or as a docker container.
+Follow the instructions as per your setup:
+  - [Running locally](#running-locally)
+  - [Running in docker](#running-in-docker)
+    - [Docker-compose with config file (recommended)](#docker-docker-compose-together-with-configyaml)
+    - [Docker-compose only](#docker-specifying-all-settings-in-docker-compose)
 
 ### Running locally
 
