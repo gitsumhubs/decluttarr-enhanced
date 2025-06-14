@@ -2,6 +2,9 @@ _Like this app? Thanks for giving it a_ ⭐️
 
 # **Decluttarr**
 
+Looking to **upgrade from V1 to V2**? Look [here](#upgrading-from-v1-to-v2)
+Note: Decluttarr 
+
 ## Table of contents
 - [Overview](#overview)
 - [Dependencies & Hints & FAQ](#dependencies--hints--faq)
@@ -10,6 +13,7 @@ _Like this app? Thanks for giving it a_ ⭐️
   - [Running in docker](#running-in-docker)
     - [Docker-compose with config file (recommended)](#docker-docker-compose-together-with-configyaml)
     - [Docker-compose only](#docker-specifying-all-settings-in-docker-compose)
+- [Upgrading from V1 to V2](#upgrading-from-v1-to-v2)
 - [Explanation of the settings](#explanation-of-the-settings)
   - [General](#general-settings)
     - [LOG_LEVEL](#log_level)
@@ -21,7 +25,7 @@ _Like this app? Thanks for giving it a_ ⭐️
     - [OBSOLETE_TAG](#obsolete_tag)
     - [PROTECTED_TAG](#protected_tag)
   - [Job Defaults](#job-defaults)
-    - [MAX_STRIKES](#max_strikes)
+    - [max_strikes](#max_strikes)
     - [MIN_DAYS_BETWEEN_SEARCHES](#min_days_between_searches)
     - [MAX_CONCURRENT_SEARCHES](#max_concurrent_searches)
   - [Jobs](#jobs)
@@ -184,11 +188,15 @@ services:
       # IGNORED_DOWNLOAD_CLIENTS: >
       #   - emulerr
       # SSL_VERIFICATION: true
+      # PRIVATE_TRACKER_HANDLING: "obsolete_tag"
+      # PUBLIC_TRACKER_HANDLING: "remove"
+      # OBSOLETE_TAG: "Obsolete"
+      # PROTECTED_TAG: "Keep"
 
       # # --- Optional: Job Defaults ---
       # You can use these to set those parameters across all jobs. If you don't specify it here, the defaults set by system will be used
       # If you set job-specific parameters (further down below), they will override these settings.
-      # MAX_STRIKES: 3
+      # max_strikes: 3
       # MIN_DAYS_BETWEEN_SEARCHES: 7
       # MAX_CONCURRENT_SEARCHES: 3
 
@@ -263,7 +271,46 @@ services:
     volumes:
       # - $DOCKERDIR/appdata/decluttarr/logs:/app/logs # Uncomment to get logs in text file, too
 ```
+## Upgrading from V1 to V2
 
+Decluttarr v2 is a major update with a cleaner config format and powerful new features. Here's what changed and how to upgrade.
+---
+
+### ✨ What’s New
+
+- 🔁 **YAML in local setups**: For local setups: Replaced config.conf file with config.yaml, offering better readability and more granular / explicit control
+- 🐳 **YAML in container setups**: Same YAML config.yaml can be used when running in container setups; previuosly, external configs were not possible
+- 💥 **Multi-instance support**: Decluttarr can now handle multiple Sonarr/Radarr etc. instances, as well as multiple qBittorrent Instances
+- 🧼 **Bad files handling**: Added ability to not download potentially malicious files and files such as trailers / samples
+- 🐌 **Adaptive slowness**: Slow downloads-removal can be dynamically turned on/off depending on overall bandwidth usage
+- 📄 **Log files**: Logs can now be retrieved from a log file
+- 📌 **Removal behavior**: Rather than removing downloads, they can now also be tagged for later removal (ie. to allow for seed targets to be reached first). This can be done separately for private and public trackers
+
+---
+
+### ⚠️ Breaking Changes
+
+V1 and V2 are not compatible, and some configurations have been changed.
+Also, the structure of the config files / docker-compose keys are different.
+
+Thus please check out [How to migrate](#️-how-to-migrate).
+
+Below are **examples** how keys have changed.
+
+| v1                              | v2                                 |
+|----------------------------------|-------------------------------------|
+| `REMOVE_TIMER`                  | `timer`                             |
+| `PERMITTED_ATTEMPTS`            | `max_strikes`                       |
+| `NO_STALLED_REMOVAL_QBIT_TAG`   | `protected_tag`                     |
+| `REMOVE_FAILED`   | `remove_failed_downloads`                     |
+| `RUN_PERIODIC_RESCANS`          | `search_better_content`, `search_missing_content` |
+| `MIN_DAYS_BEFORE_RESCAN`   | `min_days_between_searches`                     |
+| `MIN_DOWNLOAD_SPEED`   | `min_speed`                     |
+---
+
+### 🛠️ How to Migrate
+
+- Best approach: check the [Getting Started](https://github.com/ManiMatter/decluttarr/tree/decluttarr-v2?tab=readme-ov-file#getting-started) section and use the example configs as a starting point.
 
 
 ## Explanation of the settings
@@ -352,7 +399,7 @@ Certain jobs take in additional configuration settings. If you want to define th
 
 If a job has the same settings configured on job-level, the job-level settings will take precedence.
 
-#### MAX_STRIKES
+#### max_strikes
 
 -   Certain jobs wait before removing a download, until the jobs have caught the same download a given number of times. This is defined by max_strikes
 -   max_strikes defines the number of consecutive times a download can fail before it is removed.
@@ -432,7 +479,7 @@ This is the interesting section. It defines which job you want decluttarr to run
 -   Is Mandatory: No (Defaults to False)
 -   Note:
       - With max_strikes you can define how many times this torrent can be caught before being removed
-      - Instead of configuring it here, you may also configure it as a default across all jobs or use the built-in defaults (see further above under "Max_Strikes")
+      - Instead of configuring it here, you may also configure it as a default across all jobs or use the built-in defaults (see further above under "max_strikes")
 
 #### REMOVE_MISSING_FILES
 

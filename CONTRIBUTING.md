@@ -29,7 +29,7 @@ Please go follow these steps to submit a bug:
 2) Turn off all remove functions but one where you expect a removal (example: REMOVE_STALLED: True and the rest on False)
 3) Let it run until the supposed remove should be triggered
 4) Paste the full logs to a pastebin
-5) Share your settings (docker-compose or config.conf) 
+5) Share your settings (docker-compose or config.yaml) 
 6) Optional: If helpful, share screenshots showing the problem (from your arr-app or qbit) 
 7) Be responsive and provide more details if asked for them, and help testing the bug fix
 
