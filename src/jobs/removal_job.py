@@ -23,6 +23,9 @@ class RemovalJob(ABC):
         self.job_name = job_name
         self.job = getattr(self.settings.jobs, self.job_name)
         self.queue_manager = QueueManager(self.arr, self.settings)
+        self.max_strikes = getattr(self.job, "max_strikes", None)
+        if self.max_strikes:
+            self.strikes_handler = StrikesHandler(job_name=self.job_name, arr=self.arr, max_strikes=self.max_strikes)
 
 
     async def run(self) -> int:
@@ -52,10 +55,8 @@ class RemovalJob(ABC):
         return len(self.affected_downloads)
 
     def _check_strikes_handler(self):
-        max_strikes = getattr(self.job, "max_strikes", None)
-        if max_strikes:
-            strikes_handler = StrikesHandler(job_name=self.job_name, arr=self.arr, max_strikes=max_strikes)
-            self.affected_downloads = strikes_handler.check_permitted_strikes(self.affected_downloads)
+        if self.max_strikes:
+            self.affected_downloads = self.strikes_handler.check_permitted_strikes(self.affected_downloads)
 
     def _ignore_protected(self):
         """

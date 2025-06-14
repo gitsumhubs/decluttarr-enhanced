@@ -22,7 +22,7 @@ jobs:
     message_patterns:
       - Not a Custom Format upgrade for existing*
       - Not an upgrade for existing*
-      - \*Found potentially dangerous file with extension*
+      # - \*Found potentially dangerous file with extension*
   remove_metadata_missing:
     # max_strikes: 3
   remove_missing_files:

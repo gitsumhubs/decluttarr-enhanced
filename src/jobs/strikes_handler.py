@@ -15,6 +15,23 @@ class StrikesHandler:
             self.log_change(recovered, paused, affected_downloads)
         return affected_downloads
 
+    def get_entry(self, download_id):
+        return self.tracker.defective[self.job_name].get(download_id)
+
+    def pause_entry(self, download_id, reason):
+        entry = self.get_entry(download_id)
+        if entry:
+            entry["tracking_paused"] = True
+            entry["pause_reason"] = reason
+            logger.debug("strikes_handler.py/StrikesHandler/pause_entry: Paused tracking for %s due to: %s", download_id, reason)
+
+    def unpause_entry(self, download_id):
+        entry = self.get_entry(download_id)
+        if entry:
+            entry.pop("tracking_paused", None)
+            entry.pop("pause_reason", None)
+            logger.debug("strikes_handler.py/StrikesHandler/unpause_entry: Unpaused tracking for %s", download_id)
+
     def log_change(self, recovered, paused, affected_items):
         """
         Logs changes in strike tracking:
