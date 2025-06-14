@@ -222,9 +222,9 @@ services:
       # REMOVE_FAILED_DOWNLOADS: True
       # REMOVE_FAILED_IMPORTS: |
       #   message_patterns:
-      #     - Not a Custom Format upgrade for existing*
-      #     - Not an upgrade for existing*
-      #     - \*Found potentially dangerous file with extension*
+      #     - "Not a Custom Format upgrade for existing*"
+      #     - "Not an upgrade for existing*"
+      #     - "*Found potentially dangerous file with extension*"
       # REMOVE_METADATA_MISSING: |
       #   max_strikes: 3
       # REMOVE_MISSING_FILES: True
