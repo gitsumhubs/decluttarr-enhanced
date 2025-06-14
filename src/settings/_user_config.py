@@ -71,7 +71,8 @@ def _load_from_env() -> dict:
         section_config = {}
 
         for key in keys:
-            raw_value = os.getenv(key) or os.getenv(key.lower())
+            env_key = key if os.getenv(key) is not None else key.lower()
+            raw_value = os.getenv(env_key)
             if raw_value is None:
                 continue
 
