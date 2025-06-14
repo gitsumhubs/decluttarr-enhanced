@@ -55,38 +55,23 @@ def get_user_config(settings):
     return config
 
 
-def _parse_env_var(key: str) -> dict | list | str | int | None:
-    """Parse one setting input key."""
-    raw_value = os.getenv(key)
-    if raw_value is None:
-        return None
-
-    try:
-        parsed = yaml.safe_load(raw_value)
-        return _lowercase(parsed)
-    except yaml.YAMLError as e:
-        logger.error(f"Failed to parse environment variable {key} as YAML:\n{e}")
-        return {}
-
-
-def _load_section(keys: list[str]) -> dict:
-    """Parse one section of expected config."""
-    section_config = {}
-    for key in keys:
-        parsed = _parse_env_var(key)
-        if parsed is not None:
-            section_config[key.lower()] = parsed
-    return section_config
-
-
 def _load_from_env() -> dict:
+    """
+    Load and parse config from environment variables defined in CONFIG_MAPPING.
+
+    Tries uppercase and lowercase keys, parses values as YAML,
+    and lowercases dictionary keys in the result.
+
+    Returns:
+        dict: Config sections with parsed env var values.
+    """
     config = {}
 
     for section, keys in CONFIG_MAPPING.items():
         section_config = {}
 
         for key in keys:
-            raw_value = os.getenv(key)
+            raw_value = os.getenv(key) or os.getenv(key.lower())
             if raw_value is None:
                 continue
 

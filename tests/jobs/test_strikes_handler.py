@@ -1,5 +1,5 @@
 import logging
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from src.jobs.strikes_handler import StrikesHandler
@@ -122,7 +122,6 @@ def test_log_change_logs_expected_strike_changes(caplog):
     # Check actual IDs exist
     for key in ["hash_new", "hash_inc", "hash_old", "hash_gone", "hash_paused"]:
         assert key in log_messages
-    
 
 @pytest.mark.parametrize(
     "max_strikes, initial_strikes, expected_removed_after_two_runs",
