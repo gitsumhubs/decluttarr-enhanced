@@ -8,8 +8,8 @@ class StrikesHandler:
         self.max_strikes = max_strikes
         self.tracker.defective.setdefault(job_name, {})
 
-    def check_permitted_strikes(self, affected_downloads):
-        recovered, paused = self._recover_downloads(affected_downloads)
+    def check_permitted_strikes(self, affected_downloads, queue):
+        recovered, paused = self._recover_downloads(affected_downloads, queue)
         affected_downloads = self._apply_strikes_and_filter(affected_downloads)
         if logger.isEnabledFor(logging.DEBUG):
             self.log_change(recovered, paused, affected_downloads)
@@ -69,7 +69,7 @@ class StrikesHandler:
         )
         return added, incremented, recovered, removed, paused
 
-    def _recover_downloads(self, affected_downloads):
+    def _recover_downloads(self, affected_downloads, queue):
         """
         Identifies downloads that were previously tracked and are now no longer affected as recovered.
         If a download is marked as tracking_paused, they are not recovered (will be recovered later potentially)
@@ -78,6 +78,7 @@ class StrikesHandler:
         paused = {}
         job_tracker = self.tracker.defective[self.job_name]
         affected_ids = dict(affected_downloads)
+        queue_download_ids = {item.get("downloadId") for item in queue}
 
         for d_id, entry in list(job_tracker.items()):
             if d_id not in affected_ids:
@@ -91,15 +92,21 @@ class StrikesHandler:
                         pause_reason,
                     )
                     paused[d_id] = pause_reason
+                elif d_id not in queue_download_ids:
+                    logger.verbose(
+                        ">>> Job '%s' no longer flagging download (download no longer in queue): %s",
+                        self.job_name,
+                        entry["title"],
+                    )
+                    recovered.append(d_id)
                 else:
                     logger.info(
-                        ">>> Download no longer marked as %s: %s",
+                        ">>> Job '%s' no longer flagging download (download has recovered): %s",
                         self.job_name,
                         entry["title"],
                     )
                     recovered.append(d_id)
                     del job_tracker[d_id]
-
         return recovered, paused
 
     def _apply_strikes_and_filter(self, affected_downloads):
@@ -121,32 +128,22 @@ class StrikesHandler:
         entry["strikes"] += 1
         return entry["strikes"]
 
+
     def _log_strike_status(self, title, strikes, strikes_left):
-        if strikes_left >= 0:
-            logger.info(
-                ">>> Job '%s' detected download (%s/%s strikes): %s",
-                self.job_name,
-                strikes,
-                self.max_strikes,
-                title,
-            )
-        elif strikes_left == -1:
-            # this is when the strikes are exceeded; a removal warning will be shown later, thus moving to verbose level
-            logger.verbose(
-                ">>> Job '%s' detected download (%s/%s strikes): %s",
-                self.job_name,
-                strikes,
-                self.max_strikes,
-                title,
-            )
-        elif strikes_left <= -2:  # noqa: PLR2004
-            logger.info(
-                ">>> Job '%s' detected download (%s/%s strikes): %s",
-                self.job_name,
-                strikes,
-                self.max_strikes,
-                title,
-            )
+        # -1 is the first time no strikes are remaining and thus removal will be triggered
+        # Since the removal itself sparks an appropriate message, we don't need to show the message again here on info-level
+        # Thus putting it to verbose level
+        log_level = logger.verbose if strikes_left == -1 else logger.info
+
+        log_level(
+            ">>> Job '%s' flagged download (%s/%s strikes): %s",
+            self.job_name,
+            strikes,
+            self.max_strikes,
+            title,
+        )
+
+        if strikes_left <= -2: # noqa: PLR2004
             logger.info(
                 '>>> 💡 Tip: Since this download should already have been removed in a previous iteration but keeps coming back, this indicates the blocking of the torrent does not work correctly. Consider turning on the option "Reject Blocklisted Torrent Hashes While Grabbing" on the indexer in the *arr app: %s',
                 title,

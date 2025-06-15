@@ -56,7 +56,7 @@ class RemovalJob(ABC):
 
     def _check_strikes_handler(self):
         if self.max_strikes:
-            self.affected_downloads = self.strikes_handler.check_permitted_strikes(self.affected_downloads)
+            self.affected_downloads = self.strikes_handler.check_permitted_strikes(self.affected_downloads, self.queue)
 
     def _ignore_protected(self):
         """
