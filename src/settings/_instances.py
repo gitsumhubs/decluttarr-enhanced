@@ -306,17 +306,6 @@ class ArrInstance:
                     logger.info(tip)
         return
 
-    # async def get_download_client_implementation(self, download_client_name: str) -> str | None:
-    #     """Return the 'implementation' field of a specific download client by name."""
-    #     logger.debug("_instances.py/get_download_client_implementation: Looking up implementation for download client '%s'", download_client_name)
-
-    #     arr_download_clients = await self.fetch_arr_download_clients()
-
-    #     for arr_download_client in arr_download_clients:
-    #         if arr_download_client.get("name") == download_client_name:
-    #             return arr_download_client.get("implementation")
-
-    #     return None
 
     async def remove_queue_item(self, queue_id, *, blocklist=False):
         """
