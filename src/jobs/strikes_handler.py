@@ -126,7 +126,7 @@ class StrikesHandler:
                         log_level = logger.info
                         recovered.append(d_id)
 
-                    log_level(f">>> Job '{self.job_name,}' no longer flagging download (download {recovery_reason}): {entry["title"]}")
+                    log_level(f">>> Job '{self.job_name,}' no longer flagging download (download {recovery_reason}): {entry['title']}")
                     del job_tracker[d_id]
 
         return recovered, removed_from_queue, paused
