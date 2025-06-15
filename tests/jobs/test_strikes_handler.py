@@ -5,58 +5,93 @@ import pytest
 from src.jobs.strikes_handler import StrikesHandler
 
 # pylint: disable=W0212
+# pylint: disable=too-many-locals
 @pytest.mark.parametrize(
-    ("before_recovery", "expected_remaining_in_tracker"),
+    (
+        "download_id",
+        "already_in_tracker",
+        "in_queue",
+        "in_affected_ids",
+        "expected_in_tracker",
+        "expected_in_paused",
+        "expected_in_recovered",
+        "expected_in_removed_from_queue"
+    ),
     [
-        ([], []),  # nothing active → all removed
-        (["HASH1", "HASH2"], ["HASH1", "HASH2"]),  # both active → none removed
-        (["HASH2"], ["HASH2"]),  # only HASH2 active → HASH1 removed
+        # Not tracked previously, in queue, not affected → ignore
+        ("HASH1", False, True, False, False, False, False, False),
+
+        # Previously tracked, no longer in queue and not affected → recover with reason "no longer in queue"
+        ("HASH2", True, False, False, False, False, False, True),
+
+        # Previously tracked, still in queue but no longer affected → recover with reason "has recovered"
+        ("HASH3", True, True, False, False, False, True, False),
+
+        # Previously tracked, still in queue and still affected → remain tracked, no pause, no recover
+        ("HASH4", True, True, True, True, False, False, False),
+
+        # Previously tracked, still in queue, not affected but tracking paused → remain tracked in paused, no recover
+        ("HASH5", True, True, False, True, True, False, False),
     ],
 )
-def test_recover_downloads(before_recovery, expected_remaining_in_tracker):
-    """Test if tracker correctly removes items (if recovered) and adds new ones."""
-    # Fix
+def test_recover_downloads(
+    download_id,
+    already_in_tracker,
+    in_queue,
+    in_affected_ids,
+    expected_in_tracker,
+    expected_in_paused,
+    expected_in_recovered,
+    expected_in_removed_from_queue
+):
+    # Setup mock tracker with or without the download
+    strikes = 1 if already_in_tracker else None
+    defective_entry = {
+        "title": f"Title-{download_id}",
+        "strikes": strikes,
+    }
+    if expected_in_paused:
+        defective_entry["tracking_paused"] = True
+        defective_entry["pause_reason"] = "Paused for testing"
+
     tracker = MagicMock()
     tracker.defective = {
         "remove_stalled": {
-            "HASH1": {"title": "Movie-with-one-strike", "strikes": 1},
-            "HASH2": {"title": "Movie-with-three-strikes", "strikes": 3},
-        },
+            download_id: defective_entry,
+        } if already_in_tracker else {}
     }
+
     arr = MagicMock()
     arr.tracker = tracker
+
     handler = StrikesHandler(job_name="remove_stalled", arr=arr, max_strikes=3)
-    affected_downloads = [(hash_id, {"title": "dummy"}) for hash_id in before_recovery]
 
-    # Act
-    handler._recover_downloads(affected_downloads)  # pylint: disable=W0212
+    affected_downloads = []
+    if in_affected_ids:
+        affected_downloads.append((download_id, {"title": "dummy"}))
 
-    # Assert
-    assert sorted(tracker.defective["remove_stalled"].keys()) == sorted(
-        expected_remaining_in_tracker
-    )
+    queue = []
+    if in_queue:
+        queue.append({"downloadId": download_id})
 
+    # Unpack all three returned values from _recover_downloads
+    recovered, removed_from_queue, paused = handler._recover_downloads(affected_downloads, queue=queue)  # pylint: disable=W0212
 
-def test_recover_downloads2_no_patch():
-    """Test if recovery correctly skips those items where tracking is paused."""
-    handler = StrikesHandler(
-        job_name="remove_stalled", arr=MagicMock(), max_strikes=3
-    )
-    handler.tracker = MagicMock()
-    handler.tracker.defective = {
-        "remove_stalled": {
-            "id1": {"title": "Title1", "tracking_paused": False},
-            "id2": {"title": "Title2", "tracking_paused": True, "pause_reason": "manual"},
-            "id3": {"title": "Title3"},  # no paused flag = False
-        }
-    }
+    is_in_tracker = download_id in tracker.defective["remove_stalled"]
+    assert is_in_tracker == expected_in_tracker, f"{download_id} tracker presence mismatch"
 
-    affected_downloads = {"id3": {}}
+    is_in_paused = download_id in paused
+    assert is_in_paused == expected_in_paused, f"{download_id} paused presence mismatch"
 
-    recovered, paused = handler._recover_downloads(affected_downloads)
+    is_in_recovered = download_id in recovered
+    assert is_in_recovered == expected_in_recovered, f"{download_id} recovered presence mismatch"
 
-    assert recovered == ["id1"]
-    assert paused == {"id2": "manual"}
+    is_in_recovered = download_id in recovered
+    assert is_in_recovered == expected_in_recovered, f"{download_id} recovered presence mismatch"
+
+    is_in_removed = download_id in removed_from_queue
+    assert is_in_removed == expected_in_removed_from_queue, f"{download_id} removed_from_queue presence mismatch"
+
 
 
 @pytest.mark.parametrize(
@@ -94,34 +129,36 @@ def test_apply_strikes_and_filter(
     else:
         assert "HASH1" not in result
 
-
 def test_log_change_logs_expected_strike_changes(caplog):
     handler = StrikesHandler(job_name="remove_stalled", arr=MagicMock(), max_strikes=3)
     handler.tracker = MagicMock()
     handler.tracker.defective = {
         "remove_stalled": {
-            "hash_new": {"title": "A", "strikes": 1},   # should show in added
-            "hash_inc": {"title": "B", "strikes": 2},   # should show in incremented
-            "hash_paused": {"title": "C", "strikes": 2},  # should show in paused
+            "hash_new": {"strikes": 1},
+            "hash_inc": {"strikes": 2},
+            "hash_paused": {"strikes": 2, "pause_reason": "Bandwidth"},
+            "hash_exceed": {"strikes": 10},  # <- add here
         }
     }
 
-    recovered = ["hash_old"]
+    recovered = ["recovered1", "recovered2"]
+    removed_from_queue = ["removed"]
     paused = ["hash_paused"]
-    affected = {"hash_gone": {"title": "Gone"}}
+    strike_exceeds = ["hash_exceed"]
 
     with caplog.at_level(logging.DEBUG, logger="src.utils.log_setup"):
-        handler.log_change(recovered, paused, affected)
+        handler.log_change(recovered, removed_from_queue, paused, strike_exceeds)
 
     log_messages = "\n".join(record.message for record in caplog.records)
 
     # Check category keywords exist
-    for keyword in ["Added", "Incremented", "Recovered", "Removed", "Paused"]:
+    for keyword in ["Added", "Incremented", "Tracking Paused", "Removed from queue", "Recovered", "Strikes Exceeded"]:
         assert keyword in log_messages
 
-    # Check actual IDs exist
-    for key in ["hash_new", "hash_inc", "hash_old", "hash_gone", "hash_paused"]:
+    # Check actual IDs appear somewhere in the logged messages
+    for key in ["hash_new", "hash_inc", "hash_exceed", "hash_paused"]:
         assert key in log_messages
+
 
 @pytest.mark.parametrize(
     "max_strikes, initial_strikes, expected_removed_after_two_runs",
@@ -148,6 +185,10 @@ def test_strikes_handler_overall(
     Note: The logging output does not show the strike where the removal will be triggered (ie., 4/3 if max strikes = 3)
     Reason: This is on verbose-level, as instead the removal handler then shows another info-level log
     """
+    # Set the logger level by name to 15 (VERBOSE)
+    logger = logging.getLogger("src.utils.log_setup")
+    logger.setLevel(15)
+
     job_name = "remove_stalled"
     d_id = "some_hash"
 
@@ -162,9 +203,8 @@ def test_strikes_handler_overall(
     affected_downloads = {d_id: {"title": "Some Title"}}
 
     handler = StrikesHandler(job_name=job_name, arr=arr, max_strikes=max_strikes)
-    handler.check_permitted_strikes(affected_downloads.copy())
-    handler = StrikesHandler(job_name=job_name, arr=arr, max_strikes=max_strikes)
-    result = handler.check_permitted_strikes(affected_downloads.copy())
+    handler.filter_strike_exceeds(affected_downloads.copy(), queue=[])
+    result = handler.filter_strike_exceeds(affected_downloads.copy(), queue=[])
 
     assert (d_id in result) == expected_removed_after_two_runs, (
         f"Expected removed={expected_removed_after_two_runs} for "

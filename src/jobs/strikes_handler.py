@@ -8,12 +8,12 @@ class StrikesHandler:
         self.max_strikes = max_strikes
         self.tracker.defective.setdefault(job_name, {})
 
-    def check_permitted_strikes(self, affected_downloads, queue):
-        recovered, paused = self._recover_downloads(affected_downloads, queue)
-        affected_downloads = self._apply_strikes_and_filter(affected_downloads)
+    def filter_strike_exceeds(self, affected_downloads, queue):
+        recovered, removed_from_queue, paused = self._recover_downloads(affected_downloads, queue)
+        strike_exceeds = self._apply_strikes_and_filter(affected_downloads)
         if logger.isEnabledFor(logging.DEBUG):
-            self.log_change(recovered, paused, affected_downloads)
-        return affected_downloads
+            self.log_change(recovered, removed_from_queue, paused, strike_exceeds)
+        return strike_exceeds
 
     def get_entry(self, download_id):
         return self.tracker.defective[self.job_name].get(download_id)
@@ -32,42 +32,65 @@ class StrikesHandler:
             entry.pop("pause_reason", None)
             logger.debug("strikes_handler.py/StrikesHandler/unpause_entry: Unpaused tracking for %s", download_id)
 
-    def log_change(self, recovered, paused, affected_items):
+    # pylint: disable=too-many-locals, too-many-branches
+    def log_change(self, recovered, removed_from_queue, paused, strike_exceeds):
         """
         Logs changes in strike tracking:
-        - Added = new items with 1 strike
-        - Incremented = items with >1 strike
-        - Recovered = items removed from the tracker
-        - Paused = items whose tracking is paused
-        - Removed = all affected item IDs
+        - Added = Downloads caught for first time (1 strike)
+        - Incremented = Downloads caught previously (>1 strikes)
+        - Recovered = Downloads caught previously but now no longer (as they recovered)
+        - removed_from_queue = Downloads caught previously but now no longer (as they are no longer in queue)
+        - Paused = Downloads flagged as paused for tracking
+        - strike_exceeds = Downloads that have too many strikes
         """
         tracker = self.tracker.defective[self.job_name]
 
         added = []
         incremented = []
+        paused_entries = []
+        recovered_entries = []
+        removed_entries = []
+        strike_exceeded = []
 
         for d_id, entry in tracker.items():
-            strikes = entry["strikes"]
-            if strikes == 1:
+            entry = tracker.get(d_id, {})
+            strikes = entry.get("strikes")
+            if d_id in paused:
+                reason = entry.get("pause_reason", "unknown reason")
+                paused_entries.append(f"'{d_id}' [{strikes}/{self.max_strikes}, {reason}]")
+            elif d_id in strike_exceeds:
+                strike_exceeded.append(f"'{d_id}' [{strikes}/{self.max_strikes}]")
+            elif strikes == 1:
                 added.append(d_id)
             elif strikes > 1:
-                incremented.append(f"{d_id} ({strikes}/{self.max_strikes})")
+                incremented.append(f"'{d_id}' [{strikes}/{self.max_strikes}]")
 
-        removed = list(affected_items.keys())
-        logger.debug(
-            "Strike status changed | %s Added: %s | %s Incremented (strikes): %s | %s Recovered: %s | %s Tracking Paused: %s | %s Removed: %s",
-            len(added) or 0,
-            added or "None",
-            len(incremented) or 0,
-            incremented or "None",
-            len(recovered) or 0,
-            recovered or "None",
-            len(paused) or 0,
-            paused or "None",
-            len(removed) or 0,
-            removed or "None",
-        )
-        return added, incremented, recovered, removed, paused
+        for d_id in recovered:
+            recovered_entries.append(d_id)
+
+        for d_id in removed_from_queue:
+            removed_entries.append(d_id)
+
+        log_lines = [f"strikes_handler.py/log_change/defective tracker '{self.job_name}':"]
+
+        if added:
+            log_lines.append(f"Added ({len(added)}): {', '.join(added)}")
+        if incremented:
+            log_lines.append(f"Incremented ({len(incremented)}) [strikes]: {', '.join(incremented)}")
+        if paused_entries:
+            log_lines.append(f"Tracking Paused ({len(paused_entries)}) [strikes, reason]: {', '.join(paused_entries)}")
+        if removed_entries:
+            log_lines.append(f"Removed from queue ({len(removed_entries)}): {', '.join(removed_entries)}")
+        if recovered_entries:
+            log_lines.append(f"Recovered ({len(recovered_entries)}): {', '.join(recovered_entries)}")
+        if strike_exceeded:
+            log_lines.append(f"Strikes Exceeded ({len(strike_exceeded)}): {', '.join(strike_exceeded)}")
+
+        logger.debug("\n".join(log_lines))
+
+        return added, incremented, paused, recovered, strike_exceeds, removed_from_queue
+
+
 
     def _recover_downloads(self, affected_downloads, queue):
         """
@@ -75,6 +98,7 @@ class StrikesHandler:
         If a download is marked as tracking_paused, they are not recovered (will be recovered later potentially)
         """
         recovered = []
+        removed_from_queue = []
         paused = {}
         job_tracker = self.tracker.defective[self.job_name]
         affected_ids = dict(affected_downloads)
@@ -92,22 +116,20 @@ class StrikesHandler:
                         pause_reason,
                     )
                     paused[d_id] = pause_reason
-                elif d_id not in queue_download_ids:
-                    logger.verbose(
-                        ">>> Job '%s' no longer flagging download (download no longer in queue): %s",
-                        self.job_name,
-                        entry["title"],
-                    )
-                    recovered.append(d_id)
                 else:
-                    logger.info(
-                        ">>> Job '%s' no longer flagging download (download has recovered): %s",
-                        self.job_name,
-                        entry["title"],
-                    )
-                    recovered.append(d_id)
+                    if d_id not in queue_download_ids:
+                        recovery_reason = "no longer in queue"
+                        log_level = logger.verbose
+                        removed_from_queue.append(d_id)
+                    else:
+                        recovery_reason = "has recovered"
+                        log_level = logger.info
+                        recovered.append(d_id)
+
+                    log_level(f">>> Job '{self.job_name,}' no longer flagging download (download {recovery_reason}): {entry["title"]}")
                     del job_tracker[d_id]
-        return recovered, paused
+
+        return recovered, removed_from_queue, paused
 
     def _apply_strikes_and_filter(self, affected_downloads):
         for d_id, affected_download in list(affected_downloads.items()):
@@ -135,11 +157,14 @@ class StrikesHandler:
         # Thus putting it to verbose level
         log_level = logger.verbose if strikes_left == -1 else logger.info
 
+        will_trigger_removal = " -> too many" if strikes_left < 0 else ""
+
         log_level(
-            ">>> Job '%s' flagged download (%s/%s strikes): %s",
+            ">>> Job '%s' flagged download (%s/%s strikes%s): %s",
             self.job_name,
             strikes,
             self.max_strikes,
+            will_trigger_removal,
             title,
         )
 
