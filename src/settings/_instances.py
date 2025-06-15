@@ -66,6 +66,7 @@ class Instances:
     def config_as_yaml(self, *, hide_internal_attr=True):
         """Log all configured Arr instances while masking sensitive attributes."""
         internal_attributes = {
+            "tracker",
             "settings",
             "api_url",
             "min_version",
