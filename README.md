@@ -315,6 +315,7 @@ Below are **examples** how keys have changed.
 | `RUN_PERIODIC_RESCANS`          | `search_better_content`, `search_missing_content` (both under `jobs`) |
 | `MIN_DAYS_BEFORE_RESCAN`        | `min_days_between_searches`                                        |
 | `MIN_DOWNLOAD_SPEED`            | `min_speed`                                                         |
+| `FAILED_IMPORT_MESSAGE_PATTERNS`| `message_patterns` inside `remove_failed_imports`. Note that this now uses wildcards (*). Without wildcard(s), exact match is assumed                                                     |
 | `SONARR_URL`, `SONARR_API_KEY`, etc. | `sonarr` (with nested YAML fields like `url`, `api_key`, etc.)      |
 
 ---
