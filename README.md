@@ -3,7 +3,6 @@ _Like this app? Thanks for giving it a_ ⭐️
 # **Decluttarr**
 
 Looking to **upgrade from V1 to V2**? Look [here](#upgrading-from-v1-to-v2)
-Note: Decluttarr 
 
 ## Table of contents
 - [Overview](#overview)
@@ -307,15 +306,17 @@ Thus please check out [How to migrate](#️-how-to-migrate).
 
 Below are **examples** how keys have changed.
 
-| v1                              | v2                                 |
-|----------------------------------|-------------------------------------|
-| `REMOVE_TIMER`                  | `timer`                             |
-| `PERMITTED_ATTEMPTS`            | `max_strikes`                       |
-| `NO_STALLED_REMOVAL_QBIT_TAG`   | `protected_tag`                     |
-| `REMOVE_FAILED`   | `remove_failed_downloads`                     |
-| `RUN_PERIODIC_RESCANS`          | `search_better_content`, `search_missing_content` |
-| `MIN_DAYS_BEFORE_RESCAN`   | `min_days_between_searches`                     |
-| `MIN_DOWNLOAD_SPEED`   | `min_speed`                     |
+| v1                              | v2                                                                 |
+|----------------------------------|---------------------------------------------------------------------|
+| `REMOVE_TIMER`                  | `timer`                                                             |
+| `PERMITTED_ATTEMPTS`            | `max_strikes`                                                       |
+| `NO_STALLED_REMOVAL_QBIT_TAG`   | `protected_tag`                                                     |
+| `REMOVE_FAILED`                 | `remove_failed_downloads`                                           |
+| `RUN_PERIODIC_RESCANS`          | `search_better_content`, `search_missing_content` (both under `jobs`) |
+| `MIN_DAYS_BEFORE_RESCAN`        | `min_days_between_searches`                                        |
+| `MIN_DOWNLOAD_SPEED`            | `min_speed`                                                         |
+| `SONARR_URL`, `SONARR_API_KEY`, etc. | `sonarr` (with nested YAML fields like `url`, `api_key`, etc.)      |
+
 ---
 
 ### 🛠️ How to Migrate
