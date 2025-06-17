@@ -4,14 +4,14 @@ on:
   push:
     branches:
       - '*'
-    paths-ignore:
-      - '**/*.md'
+    paths:
+      - 'src/**'
   pull_request:
     branches:
-      - '*' 
-    paths-ignore:
-      - '**/*.md'
-  workflow_dispatch: 
+      - '*'
+    paths:
+      - 'src/**'
+  workflow_dispatch:
   create:
     branches:
       - '*'
