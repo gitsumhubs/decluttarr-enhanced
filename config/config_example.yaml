@@ -24,6 +24,8 @@ jobs:
       - "Not an upgrade for existing*"
       - "*Found potentially dangerous file with extension*"
       - "Invalid video file*"
+      - "No files found are eligible for import*"
+      - "One or more episodes expected in this release were not imported or missing from the release"
   remove_metadata_missing:
     # max_strikes: 3
   remove_missing_files:

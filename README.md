@@ -230,6 +230,8 @@ services:
       #     - "Not an upgrade for existing*"
       #     - "*Found potentially dangerous file with extension*"
       #     - "Invalid video file*"
+      #     - "No files found are eligible for import*"
+      #     - "One or more episodes expected in this release were not imported or missing from the release"
       # REMOVE_METADATA_MISSING: |
       #   max_strikes: 3
       # REMOVE_MISSING_FILES: True
@@ -275,8 +277,9 @@ services:
         - base_url: "http://qbittorrent:8080"
           # username: "$QBIT_USERNAME" # (optional -> if not provided, assuming not needed)
           # password: "$QBIT_PASSWORD" # (optional -> if not provided, assuming not needed)
-          # name: "qBittorrent" # (optional -> if not provided, assuming "qBittorrent". Must correspond with what is specified in your *arr as download client name)
-
+          name: "qBittorrent 1" # (optional -> if not provided, assuming "qBittorrent". Must correspond with what is specified in your *arr as download client name)
+        - base_url: "http://qbittorrent:8080"
+          name: "qBittorrent 2" 
     volumes:
       # - $DOCKERDIR/appdata/decluttarr/logs:/app/logs # Uncomment to get logs in text file, too
 ```
