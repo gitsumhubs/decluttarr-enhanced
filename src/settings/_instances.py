@@ -293,13 +293,13 @@ class ArrInstance:
                     )
                     if not download_client_list:
                         tip = (
-                            f"💡 Tip: In your {self.name} settings, you have a {download_client_type} download client configured named '{arr_download_client_name}'.\n"
+                            f"💡 Tip: In the settings of your {self.name} instance, you have a {download_client_type} download client configured named '{arr_download_client_name}'.\n"
                             "However, in your decluttarr settings under 'download_clients', there is nothing configured.\n"
                             "Adding a matching entry to your decluttarr settings will enable you to fully leverage the features and benefits that decluttarr brings."
                         )
                     else:
                         tip = (
-                            f"💡 Tip: In your {self.name} settings, you have a {download_client_type} download client configured named '{arr_download_client_name}'.\n"
+                            f"💡 Tip: In the settings of your {self.name} instance, you have a {download_client_type} download client configured named '{arr_download_client_name}'.\n"
                             "However, in your decluttarr settings under 'download_clients', there is no entry that matches this name.\n"
                             "Adding a matching entry to your decluttarr settings will enable you to fully leverage the features and benefits that decluttarr brings.\n"
                             f"Currently, your configured download clients are: {download_client_list}"
