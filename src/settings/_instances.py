@@ -327,7 +327,7 @@ class ArrInstance:
         )
         endpoint = f"{self.api_url}/queue/{queue_id}"
         headers = {"X-Api-Key": self.api_key}
-        json_payload = {"removeFromClient": True, "blocklist": blocklist}
+        query = {"removeFromClient": True, "blocklist": blocklist}
 
         # Send the request to remove the download from the queue
         response = await make_request(
@@ -335,7 +335,7 @@ class ArrInstance:
             endpoint,
             self.settings,
             headers=headers,
-            json=json_payload,
+            params=query,
         )
 
         # If the response is successful, return True, else return False
