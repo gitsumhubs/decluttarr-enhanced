@@ -50,21 +50,16 @@ class ArrError(Exception):
     pass
 
 
-class Instances:
-    """Represents all Arr instances."""
+
+class ArrInstances(list):
+    """Represents all Arr clients (Sonarr, Radarr, etc.)."""
 
     def __init__(self, config, settings):
-        self.arrs = ArrInstances(config, settings)
-        if not self.arrs:
-            logger.error("No valid Arr instances found in the config.")
-            wait_and_exit()
-
-    def get_by_arr_type(self, arr_type):
-        """Return a list of arr instances matching the given arr_type."""
-        return [arr for arr in self.arrs if arr.arr_type == arr_type]
+        super().__init__()
+        self._load_clients(config, settings)
+        self.check_any_arrs()
 
     def config_as_yaml(self, *, hide_internal_attr=True):
-        """Log all configured Arr instances while masking sensitive attributes."""
         internal_attributes = {
             "tracker",
             "settings",
@@ -93,19 +88,13 @@ class Instances:
 
         return "\n".join(outputs)
 
+    def get_by_arr_type(self, arr_type):
+        return [arr for arr in self if arr.arr_type == arr_type]
+
     def check_any_arrs(self):
-        """Check if there are any ARR instances."""
-        if not self.arrs:
-            logger.warning("No ARR instances found.")
+        if not self:
+            logger.error("No valid Arr instances found in the config.")
             wait_and_exit()
-
-
-class ArrInstances(list):
-    """Represents all Arr clients (Sonarr, Radarr, etc.)."""
-
-    def __init__(self, config, settings):
-        super().__init__()
-        self._load_clients(config, settings)
 
     def _load_clients(self, config, settings):
         instances_config = config.get("instances", {})

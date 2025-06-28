@@ -64,5 +64,5 @@ async def launch_steps(settings):
 
     # Setup arrs (apply checks, and store information)
     settings.instances.check_any_arrs()
-    for arr in settings.instances.arrs:
+    for arr in settings.instances:
         await arr.setup()

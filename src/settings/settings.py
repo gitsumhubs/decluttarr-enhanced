@@ -1,7 +1,7 @@
 from src.settings._constants import Envs, MinVersions, Paths
 from src.settings._download_clients import DownloadClients
 from src.settings._general import General
-from src.settings._instances import Instances
+from src.settings._instances import ArrInstances
 from src.settings._jobs import Jobs
 from src.settings._user_config import get_user_config
 from src.utils.log_setup import configure_logging
@@ -18,7 +18,7 @@ class Settings:
         self.general = General(config)
         self.jobs = Jobs(config)
         self.download_clients = DownloadClients(config, self)
-        self.instances = Instances(config, self)
+        self.instances = ArrInstances(config, self)
         configure_logging(self)
 
     def __repr__(self):

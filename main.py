@@ -49,7 +49,7 @@ async def main():
             await qbit.refresh_cookie()
 
         # Run script for each instance
-        for arr in settings.instances.arrs:
+        for arr in settings.instances:
             await job_manager.run_jobs(arr)
             logger.verbose("")
 
