@@ -117,14 +117,18 @@ class StrikesHandler:
                     )
                     paused[d_id] = pause_reason
                 else:
-                    if d_id not in queue_download_ids:
-                        recovery_reason = "no longer in queue"
-                        log_level = logger.verbose
-                        removed_from_queue.append(d_id)
-                    else:
+                    if d_id in queue_download_ids:
                         recovery_reason = "has recovered"
                         log_level = logger.info
                         recovered.append(d_id)
+                    elif d_id in self.tracker.deleted:
+                        recovery_reason = "deleted in previous round"
+                        log_level = logger.debug
+                        removed_from_queue.append(d_id)
+                    else:
+                        recovery_reason = "no longer in queue"
+                        log_level = logger.verbose
+                        removed_from_queue.append(d_id)
 
                     log_level(f">>> Job '{self.job_name,}' no longer flagging download (download {recovery_reason}): {entry['title']}")
                     del job_tracker[d_id]
