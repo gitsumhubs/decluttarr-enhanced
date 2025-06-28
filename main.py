@@ -42,7 +42,7 @@ async def main():
 
     # Start Cleaning
     while True:
-        logger.verbose("-" * 50)
+        logger.info("-" * 50)
 
         # Refresh qBit Cookies
         for qbit in settings.download_clients.qbittorrent:

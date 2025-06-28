@@ -21,11 +21,17 @@ class JobManager:
 
     async def run_jobs(self, arr):
         self.arr = arr
-        logger.verbose(f"*** Running jobs on {self.arr.name} ({self.arr.base_url}) ***")
+        logger.info(f"*** Running jobs on {self.arr.name} ({self.arr.base_url}) ***")
         await self.removal_jobs()
         await self.search_jobs()
 
     async def removal_jobs(self):
+        # Check removal jobs
+        removal_jobs = self._get_removal_jobs()
+        if not any(removal_job.job.enabled for removal_job in removal_jobs):
+            logger.verbose("Removel Jobs: None triggered (No jobs active)")
+            return
+
         if not await self._queue_has_items():
             return
 
@@ -36,10 +42,6 @@ class JobManager:
         await self.arr.tracker.refresh_private_and_protected(self.settings)
 
         # Run Remval Jobs
-        removal_jobs = self._get_removal_jobs()
-        if not removal_jobs:
-            logger.verbose("Removel Jobs: None triggered (No jobs active)")
-            return
 
         items_detected = 0
         for removal_job in removal_jobs:
