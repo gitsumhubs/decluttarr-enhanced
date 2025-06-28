@@ -33,13 +33,13 @@ class Settings:
         messages = ["🛠️  Decluttarr - Settings 🛠️", "-" * 80]
         for title, attr_name in sections:
             section = getattr(self, attr_name, None)
-            section_content = section.config_as_yaml()
+            section_yaml = section.config_as_yaml()
             if title == "ACTIVE JOBS":
                 messages.append(self._format_section_title(title))
                 messages.append(self.jobs.list_job_status())
-            elif section_content != "{}":
+            elif section_yaml != "{}":
                 messages.append(self._format_section_title(title))
-                messages.append(section_content)
+                messages.append(section_yaml)
             messages.append("")  # Extra linebreak after section
         return "\n".join(messages)
 

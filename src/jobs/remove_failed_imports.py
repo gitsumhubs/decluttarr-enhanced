@@ -46,24 +46,21 @@ class RemoveFailedImports(RemovalJob):
         if not messages:
             return []
 
-        return [f">>>>> Tracked Download State: {item['trackedDownloadState']}", *messages]
+        removal_messages = [
+            f"↳ Tracked Download State: {item['trackedDownloadState']}",
+            f"↳ Status Messages:",
+            *[f" - {msg}" for msg in messages]
+        ]
+        return removal_messages
+
 
     @staticmethod
-    def _get_matching_messages(status_messages, patterns) -> list:
-        """Extract messages matching the provided patterns (or all messages if no pattern)."""
-        matched_messages = []
-
-        if not patterns:
-            # No patterns provided, include all messages
-            for status_message in status_messages:
-                matched_messages.extend(f">>>>> - {msg}" for msg in status_message.get("messages", []))
-        else:
-            # Patterns provided, match only those messages that fit the patterns
-            matched_messages.extend(
-                f">>>>> - {msg}"
-                for status_message in status_messages
-                for msg in status_message.get("messages", [])
-                if any(fnmatch.fnmatch(msg, pattern) for pattern in patterns)
-            )
-
-        return matched_messages
+    def _get_matching_messages(status_messages, patterns) -> list[str]:
+        """Extract unique messages matching the provided patterns (or all messages if no pattern)."""
+        messages = [
+            msg
+            for status_message in status_messages
+            for msg in status_message.get("messages", [])
+            if not patterns or any(fnmatch.fnmatch(msg, pattern) for pattern in patterns)
+        ]
+        return list(dict.fromkeys(messages))

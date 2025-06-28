@@ -26,6 +26,16 @@ def terminate(sigterm: signal.SIGTERM, frame: types.FrameType) -> None:  # noqa:
     logger.info(f"Termination signal received at {datetime.datetime.now()}.")  # noqa: DTZ005
     sys.exit(0)
 
+async def wait_next_run():
+   # Calculate next run time dynamically (to display)
+    next_run = datetime.datetime.now() + datetime.timedelta(minutes=settings.general.timer)
+    formatted_next_run = next_run.strftime("%Y-%m-%d %H:%M")
+
+    logger.verbose(f"*** Done - Next run at {formatted_next_run} ****")
+
+    # Wait for the next run
+    await asyncio.sleep(settings.general.timer * 60)
+
 # Main function
 async def main():
     await launch_steps(settings)
@@ -41,12 +51,10 @@ async def main():
         # Run script for each instance
         for arr in settings.instances.arrs:
             await job_manager.run_jobs(arr)
-
-        logger.verbose("")
-        logger.verbose("Queue clean-up complete!")
+            logger.verbose("")
 
         # Wait for the next run
-        await asyncio.sleep(settings.general.timer * 60)
+        await wait_next_run()
     return
 
 

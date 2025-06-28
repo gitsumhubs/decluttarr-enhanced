@@ -8,22 +8,43 @@ from src.utils.wanted_manager import WantedManager
 
 
 class SearchHandler:
-    def __init__(self, arr, settings):
+    def __init__(self, arr, settings, missing_or_cutoff, job_name):
         self.arr = arr
         self.settings = settings
-        self.job = None
         self.wanted_manager = WantedManager(self.arr, self.settings)
+        self.missing_or_cutoff = missing_or_cutoff
+        self._configure_search_target()
+        self.job_name = job_name
 
-    async def handle_search(self, search_type):
-        logger.debug(f"search_handler.py: Running '{search_type}' search")
-        self._initialize_job(search_type)
+    def _configure_search_target(self):
+        logger.debug(
+            f"search_handler.py/_configure_search_target: Setting job & search label ({self.missing_or_cutoff})"
+        )
+        if self.missing_or_cutoff == "missing":
+            self.job = self.settings.jobs.search_missing
+            self.search_target_label = f"missing {self.arr.detail_item_key}s"
+        elif self.missing_or_cutoff == "cutoff":
+            self.job = self.settings.jobs.search_unmet_cutoff
+            self.search_target_label = f"{self.arr.detail_item_key}s with unmet cutoff"
+        else:
+            error = f"Unknown search type: {self.missing_or_cutoff}"
+            raise ValueError(error)
 
-        logger.debug(f"search_handler.py/handle_search: Getting the list of wanted items ({search_type})")
-        wanted_items = await self._get_initial_wanted_items(search_type)
+    async def handle_search(self):
+        logger.debug(
+            f"search_handler.py/handle_search: Running '{self.missing_or_cutoff}' search"
+        )
+
+        logger.debug(
+            f"search_handler.py/handle_search: Getting the list of wanted items ({self.missing_or_cutoff})"
+        )
+        wanted_items = await self._get_initial_wanted_items()
         if not wanted_items:
             return
 
-        logger.debug(f"search_handler.py/handle_search: Getting list of queue items to only search for items that are not already downloading.")
+        logger.debug(
+            f"search_handler.py/handle_search: Getting list of queue items to only search for items that are not already downloading."
+        )
         queue = await QueueManager(self.arr, self.settings).get_queue_items(
             queue_scope="normal",
         )
@@ -31,38 +52,32 @@ class SearchHandler:
         if not wanted_items:
             return
 
-        await self._log_items(wanted_items, search_type)
-        logger.debug(f"search_handler.py/handle_search: Triggering search for wanted items ({search_type})")
+        await self._log_items(wanted_items)
+        logger.debug(
+            f"search_handler.py/handle_search: Triggering search for wanted items ({self.missing_or_cutoff})"
+        )
         await self._trigger_search(wanted_items)
 
-    def _initialize_job(self, search_type):
-        logger.verbose("")
-        if search_type == "missing":
-            logger.verbose(f"Searching for missing content on {self.arr.name}:")
-            self.job = self.settings.jobs.search_missing_content
-        elif search_type == "cutoff":
-            logger.verbose(f"Searching for unmet cutoff content on {self.arr.name}:")
-            self.job = self.settings.jobs.search_unmet_cutoff_content
-        else:
-            error = f"Unknown search type: {search_type}"
-            raise ValueError(error)
-
-    def _get_initial_wanted_items(self, search_type):
-        wanted = self.wanted_manager.get_wanted_items(search_type)
+    def _get_initial_wanted_items(self):
+        wanted = self.wanted_manager.get_wanted_items(self.missing_or_cutoff)
         if not wanted:
-            logger.verbose(f">>> No {search_type} items, thus not triggering a search.")
+            logger.verbose(
+                f"Job '{self.job_name}' did not trigger a search: No {self.search_target_label}"
+            )
         return wanted
 
     def _filter_wanted_items(self, items, queue):
         items = self._filter_already_downloading(items, queue)
         if not items:
-            logger.verbose(">>> All items already downloading, nothing to search for.")
+            logger.verbose(
+                f"Job '{self.job_name}' did not trigger a search: All {self.search_target_label} are already in the queue"
+            )
             return []
 
         items = self._filter_recent_searches(items)
         if not items:
             logger.verbose(
-                ">>> All items recently searched for, thus not triggering another search.",
+                f"Job '{self.job_name}' did not trigger a search: All {self.search_target_label} were searched for in the last {self.job.min_days_between_searches} days"
             )
             return []
 
@@ -98,15 +113,19 @@ class SearchHandler:
 
         return result
 
-    async def _log_items(self, items, search_type):
-        logger.verbose(f">>> Running a scan for {len(items)} {search_type} items:")
+    async def _log_items(self, items):
+        logger.info(
+            f"Job '{self.job_name}' triggered a search for {len(items)} {self.arr.detail_item_key}s"
+        )
         for item in items:
             if self.arr.arr_type in ["radarr", "readarr", "lidarr"]:
                 title = item.get("title", "Unknown")
-                logger.verbose(f">>> - {title}")
+                logger.verbose(f"- {title}")
 
             elif self.arr.arr_type == "sonarr":
-                logger.debug("search_handler.py/_log_items: Getting series information for better display in output")
+                logger.debug(
+                    "search_handler.py/_log_items: Getting series information for better display in output"
+                )
                 series = await self.arr.get_series()
                 series_title = next(
                     (s["title"] for s in series if s["id"] == item.get("seriesId")),
@@ -115,7 +134,7 @@ class SearchHandler:
                 episode = item.get("episodeNumber", "00")
                 season = item.get("seasonNumber", "00")
                 season_numbering = f"S{int(season):02}/E{int(episode):02}"
-                logger.verbose(f">>> - {series_title} ({season_numbering})")
+                logger.verbose(f"- {series_title} ({season_numbering})")
 
     async def _get_series_dict(self):
         series = await self.arr.rest_get("series")

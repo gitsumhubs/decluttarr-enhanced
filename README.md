@@ -37,8 +37,8 @@ Looking to **upgrade from V1 to V2**? Look [here](#upgrading-from-v1-to-v2)
     - [REMOVE_SLOW](#remove_slow)
     - [REMOVE_STALLED](#remove_stalled)
     - [REMOVE_UNMONITORED](#remove_unmonitored)
-    - [SEARCH_CUTOFF_UNMET_CONTENT](#search_unmet_cutoff_content)
-    - [SEARCH_MISSING_CONTENT](#search_missing_content)
+    - [SEARCH_CUTOFF_UNMET](#search_unmet_cutoff)
+    - [SEARCH_MISSING](#search_missing)
   - [Instances](#arr-instances)
     - [SONARR](#sonarr)
     - [RADARR](#radarr)
@@ -66,8 +66,8 @@ Feature overview:
 -   Removing downloads that are repeatedly have been found to be slow (remove_slow)
 -   Removing downloads that are stalled (remove_stalled)
 -   Removing downloads belonging to movies/series/albums etc. that have been marked as "unmonitored" (remove_unmonitored)
--   Periodically searching for better content on movies/series/albums etc. where cutoff has not been reached yet (search_cutoff_unmet_content)
--   Periodically searching for missing content that has not yet been found (search_missing_content)
+-   Periodically searching for better content on movies/series/albums etc. where cutoff has not been reached yet (search_cutoff_unmet)
+-   Periodically searching for missing content that has not yet been found (search_missing)
 
 
 Key behaviors:
@@ -215,8 +215,8 @@ services:
       REMOVE_SLOW: True
       REMOVE_STALLED: True
       REMOVE_UNMONITORED: True
-      SEARCH_BETTER_CONTENT: True
-      SEARCH_MISSING_CONTENT: True
+      SEARCH_BETTER: True
+      SEARCH_MISSING: True
 
       # # --- OR: Jobs (with job-specific settings) ---
       # Alternatively, you can use the below notation, which for certain jobs allows you to set additional parameters
@@ -242,10 +242,10 @@ services:
       # REMOVE_STALLED: |
       #   max_strikes: 3
       # REMOVE_UNMONITORED: True
-      # SEARCH_UNMET_CUTOFF_CONTENT: |
+      # SEARCH_UNMET_CUTOFF: |
       #   min_days_between_searches: 7
       #   max_concurrent_searches: 3
-      # SEARCH_MISSING_CONTENT: |
+      # SEARCH_MISSING: |
       #   min_days_between_searches: 7
       #   max_concurrent_searches: 3
 
@@ -315,7 +315,7 @@ Below are **examples** how keys have changed.
 | `PERMITTED_ATTEMPTS`            | `max_strikes`                                                       |
 | `NO_STALLED_REMOVAL_QBIT_TAG`   | `protected_tag`                                                     |
 | `REMOVE_FAILED`                 | `remove_failed_downloads`                                           |
-| `RUN_PERIODIC_RESCANS`          | `search_better_content`, `search_missing_content` (both under `jobs`) |
+| `RUN_PERIODIC_RESCANS`          | `search_better`, `search_missing` (both under `jobs`) |
 | `MIN_DAYS_BEFORE_RESCAN`        | `min_days_between_searches`                                        |
 | `MIN_DOWNLOAD_SPEED`            | `min_speed`                                                         |
 | `FAILED_IMPORT_MESSAGE_PATTERNS`| `message_patterns` inside `remove_failed_imports`. Note that this now uses wildcards (*). Without wildcard(s), exact match is assumed                                                     |
@@ -425,7 +425,7 @@ If a job has the same settings configured on job-level, the job-level settings w
 
 #### MIN_DAYS_BETWEEN_SEARCHES
 
--   Only relevant together with search_unmet_cutoff_content and search_missing_content
+-   Only relevant together with search_unmet_cutoff and search_missing
 -   Specified how many days should elapse before decluttarr tries to search for a given wanted item again
 -   Type: Integer
 -   Permissible Values: Any number
@@ -433,7 +433,7 @@ If a job has the same settings configured on job-level, the job-level settings w
 
 #### MAX_CONCURRENT_SEARCHES
 
--   Only relevant together with search_unmet_cutoff_content and search_missing_content
+-   Only relevant together with search_unmet_cutoff and search_missing
 -   Specified how many ites concurrently on a single arr should be searched for in a given iteration
 -   Each arr counts separately
 -   Example: If your wanted-list has 100 entries, and you define "3" as your number, after roughly 30 searches you'll have all items on your list searched for.
@@ -549,7 +549,7 @@ This is the interesting section. It defines which job you want decluttarr to run
 -   Permissible Values: True, False
 -   Is Mandatory: No (Defaults to False)
 
-#### SEARCH_UNMET_CUTOFF_CONTENT
+#### SEARCH_UNMET_CUTOFF
 
 -   Steers whether searches are automatically triggered for items that are wanted and have not yet met the cutoff
 -   Type: Boolean or Dict
@@ -560,7 +560,7 @@ This is the interesting section. It defines which job you want decluttarr to run
 -   Note:
       - You can also specify min_days_between_searches and max_concurrent_searches as job defaults (see above) or simply rely on the system defaults
 
-#### SEARCH_MISSING_CONTENT
+#### SEARCH_MISSING
 
 -   Steers whether searches are automatically triggered for items that are missing
 -   Type: Boolean or Dict

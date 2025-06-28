@@ -32,6 +32,10 @@ class JobParams:
         self.max_concurrent_searches = max_concurrent_searches
         self.min_days_between_searches = min_days_between_searches
 
+        # if not self.max_concurrent_searches <= 0:
+        #     logger.warning(f"Job setting 'max_concurrent_searches' must be an integer greater 0. Found: {str(self.max_concurrent_searches)}. Using default: 3")
+        #     self.max_concurrent_searches = 3
+
         # Remove attributes that are None to keep the object clean
         self._remove_none_attributes()
 
@@ -55,11 +59,16 @@ class JobDefaults:
     def __init__(self, config):
         job_defaults_config = config.get("job_defaults", {})
         self.max_strikes = job_defaults_config.get("max_strikes", self.max_strikes)
-        self.max_concurrent_searches = job_defaults_config.get(
-            "max_concurrent_searches", self.max_concurrent_searches,
-        )
+        max_concurrent_searches = job_defaults_config.get("max_concurrent_searches")
+        if isinstance(max_concurrent_searches, int) and max_concurrent_searches > 0:
+            self.max_concurrent_searches = max_concurrent_searches
+        else:
+            logger.warning(
+                f"Job default 'max_concurrent_searches' must be an integer greater 0. Found: {str(max_concurrent_searches)}. Using default: {self.max_concurrent_searches}"
+            )
         self.min_days_between_searches = job_defaults_config.get(
-            "min_days_between_searches", self.min_days_between_searches,
+            "min_days_between_searches",
+            self.min_days_between_searches,
         )
         validate_data_types(self)
 
@@ -74,9 +83,7 @@ class Jobs:
         del self.job_defaults
 
     def _set_job_defaults(self):
-        self.remove_bad_files = JobParams(
-            keep_archives=self.job_defaults.keep_archives
-        )
+        self.remove_bad_files = JobParams(keep_archives=self.job_defaults.keep_archives)
         self.remove_failed_downloads = JobParams()
         self.remove_failed_imports = JobParams(
             message_patterns=self.job_defaults.message_patterns,
@@ -92,11 +99,11 @@ class Jobs:
         )
         self.remove_stalled = JobParams(max_strikes=self.job_defaults.max_strikes)
         self.remove_unmonitored = JobParams()
-        self.search_unmet_cutoff_content = JobParams(
+        self.search_unmet_cutoff = JobParams(
             max_concurrent_searches=self.job_defaults.max_concurrent_searches,
             min_days_between_searches=self.job_defaults.min_days_between_searches,
         )
-        self.search_missing_content = JobParams(
+        self.search_missing = JobParams(
             max_concurrent_searches=self.job_defaults.max_concurrent_searches,
             min_days_between_searches=self.job_defaults.min_days_between_searches,
         )
@@ -133,7 +140,8 @@ class Jobs:
 
         setattr(self, job_name, job)
         validate_data_types(
-            job, self.job_defaults,
+            job,
+            self.job_defaults,
         )  # Validates and applies defaults from job_defaults
 
     def log_status(self):

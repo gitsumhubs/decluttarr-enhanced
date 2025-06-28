@@ -21,12 +21,11 @@ class JobManager:
 
     async def run_jobs(self, arr):
         self.arr = arr
+        logger.verbose(f"*** Running jobs on {self.arr.name} ({self.arr.base_url}) ***")
         await self.removal_jobs()
         await self.search_jobs()
 
     async def removal_jobs(self):
-        logger.verbose("")
-        logger.verbose(f"Cleaning queue on {self.arr.name}:")
         if not await self._queue_has_items():
             return
 
@@ -36,27 +35,37 @@ class JobManager:
         # Refresh trackers
         await self.arr.tracker.refresh_private_and_protected(self.settings)
 
-        # Execute Cleaning
+        # Run Remval Jobs
         removal_jobs = self._get_removal_jobs()
+        if not removal_jobs:
+            logger.verbose("Removel Jobs: None triggered (No jobs active)")
+            return
+
         items_detected = 0
         for removal_job in removal_jobs:
             items_detected += await removal_job.run()
 
         if items_detected == 0:
-            logger.verbose(">>> Queue is clean.")
+            logger.verbose("Removal Jobs: All jobs passed (Queue is clean)")
 
     async def search_jobs(self):
         if (
             self.arr.arr_type == "whisparr"
         ):  # Whisparr does not support this endpoint (yet?)
             return
-        if self.settings.jobs.search_missing_content.enabled:
-            await SearchHandler(self.arr, self.settings).handle_search("missing")
-        if self.settings.jobs.search_unmet_cutoff_content.enabled:
-            await SearchHandler(self.arr, self.settings).handle_search("cutoff")
+        if self.settings.jobs.search_missing.enabled:
+            await SearchHandler(
+                arr=self.arr, settings=self.settings, missing_or_cutoff="missing", job_name="search_missing"
+            ).handle_search()
+        if self.settings.jobs.search_unmet_cutoff.enabled:
+            await SearchHandler(
+                arr=self.arr, settings=self.settings, missing_or_cutoff="cutoff", job_name="search_cutoff_unmet"
+            ).handle_search()
 
     async def _queue_has_items(self):
-        logger.debug(f"job_manager.py/_queue_has_items (Before any removal jobs): Checking if any items in full queue")
+        logger.debug(
+            f"job_manager.py/_queue_has_items (Before any removal jobs): Checking if any items in full queue"
+        )
         queue_manager = QueueManager(self.arr, self.settings)
         full_queue = await queue_manager.get_queue_items("full")
         if full_queue:
@@ -67,12 +76,14 @@ class JobManager:
             return True
 
         self.arr.tracker.reset()
-        logger.verbose(">>> Queue is empty.")
+        logger.verbose("Removal Jobs: None triggered (Queue is empty)")
         return False
 
     async def _qbit_connected(self):
         for qbit in self.settings.download_clients.qbittorrent:
-            logger.debug(f"job_manager.py/_queue_has_items (Before any removal jobs): Checking if qbit is connected to the internet")
+            logger.debug(
+                f"job_manager.py/_queue_has_items (Before any removal jobs): Checking if qbit is connected to the internet"
+            )
             # Check if any client is disconnected
             if not await qbit.check_qbit_connected():
                 logger.warning(
