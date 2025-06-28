@@ -79,7 +79,11 @@ class RemoveBadFiles(RemovalJob):
         qbit_items = await qbit_client.get_qbit_items(hashes=hashes)
 
         for qbit_item in self._get_items_to_process(qbit_items):
+
             self.arr.tracker.extension_checked.append(qbit_item["hash"])
+
+            if qbit_item["hash"].upper() in self.arr.tracker.protected: # Do not stop files in protected torrents
+                continue
 
             torrent_files = await self._get_active_files(qbit_client, qbit_item["hash"])
             stoppable_files = self._get_stoppable_files(torrent_files)
