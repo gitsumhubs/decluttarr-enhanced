@@ -133,14 +133,13 @@ class RemoveBadFiles(RemovalJob):
             for f in files if f["priority"] > 0
         ]
 
-    @staticmethod
-    def _log_stopped_files(stopped_files, torrent_name) -> None:
+    def _log_stopped_files(self, stopped_files, torrent_name) -> None:
         logger.verbose(
-            f">>> Stopped downloading {len(stopped_files)} file{'s' if len(stopped_files) != 1 else ''} in: {torrent_name}",
+            f"Job '{self.job_name}' stopped downloading {len(stopped_files)} file{'s' if len(stopped_files) != 1 else ''} in: {torrent_name}",
         )
 
         for file, reasons in stopped_files:
-            logger.verbose(f">>> - {file['file_name']} ({' & '.join(reasons)})")
+            logger.verbose(f"- {file['file_name']} ({' & '.join(reasons)})")
 
     def _get_stoppable_files(self, torrent_files):
         """Return files that can be marked as 'Do not Download' based on specific conditions."""
