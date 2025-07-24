@@ -1,6 +1,6 @@
 [tool.pylint]
 ignore = [".venv", "old"]
-ignore-patterns = ["__pycache__", ".pytest_cache"]
+ignore-patterns = ["__pycache__", ".pytest_cache", "snip_"]
 disable = [
     "logging-fstring-interpolation",    # W1203
     "f-string-without-interpolation",   # W1309
