@@ -31,7 +31,7 @@ class RemoveSlow(RemovalJob):
 
             # Is Usenet -> skip
             if self._is_usenet(item):
-                continue  # No need to check for speed for usenet
+                continue  # No need to check for speed for usenet, since there users pay for speed
 
             # Completed but stuck -> skip
             if self._is_completed_but_stuck(item):
@@ -143,7 +143,7 @@ class RemoveSlow(RemovalJob):
             if download_client.bandwidth_usage > DISABLE_OVER_BANDWIDTH_USAGE:
                 self.strikes_handler.pause_entry(download_id, "High Bandwidth Usage")
                 return True
-        # SABnzbd: Users typically pay for their Usenet speed, so bandwidth checking isn't applicable
+        # SABnzbd: Bandwidth checking isn't applicable to usenet usage
 
         return False
 
@@ -166,5 +166,5 @@ class RemoveSlow(RemovalJob):
                 continue
             if item["download_client_type"] == "qbittorrent":
                 await download_client.set_bandwidth_usage()
-            # SABnzbd doesn't need bandwidth usage tracking for the same reason as usenet
+            # SABnzbd: Since bandwith checking isn't applicable, setting bandwidth usage is irrelevant
             processed_clients.add(item["download_client"])
