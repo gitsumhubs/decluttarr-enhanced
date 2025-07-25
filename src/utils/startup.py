@@ -62,6 +62,10 @@ async def launch_steps(settings):
     for qbit in settings.download_clients.qbittorrent:
         await qbit.setup()
 
+    # Check SABnzbd connections and versions
+    for sabnzbd in settings.download_clients.sabnzbd:
+        await sabnzbd.setup()
+
     # Setup arrs (apply checks, and store information)
     settings.instances.check_any_arrs()
     for arr in settings.instances:

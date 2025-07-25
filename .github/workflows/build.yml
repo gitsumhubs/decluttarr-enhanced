@@ -3,18 +3,18 @@ name: Test, Build, Deploy
 on:
   push:
     branches:
-      - '*'
+      - "*"
     paths:
-      - 'src/**'
+      - "src/**"
   pull_request:
     branches:
-      - '*'
+      - "*"
     paths:
-      - 'src/**'
+      - "src/**"
   workflow_dispatch:
   create:
     branches:
-      - '*'
+      - "*"
 
 jobs:
   validate-branch-name:
@@ -44,7 +44,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10.13'
+          python-version: "3.10.13"
       - name: Install testing dependencies
         run: |
           python -m pip install --upgrade pip
@@ -60,7 +60,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: '0'
+          fetch-depth: "0"
 
       - name: Bump version and push tag
         if: ${{ github.ref_name == 'latest' }}
@@ -70,7 +70,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WITH_V: true
           RELEASE_BRANCHES: latest
-         
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -104,7 +104,7 @@ jobs:
           # Convert IMAGE_TAG to lowercase
           IMAGE_TAG=$(echo $IMAGE_TAG | tr '[:upper:]' '[:lower:]')
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
-          
+
           # Convert repository owner to lowercase
           REPO_OWNER=$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')
           echo "REPO_OWNER=$REPO_OWNER" >> $GITHUB_ENV

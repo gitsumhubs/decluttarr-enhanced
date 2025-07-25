@@ -92,6 +92,17 @@ class JobManager:
                     f">>> qBittorrent is disconnected. Skipping queue cleaning on {self.arr.name}.",
                 )
                 return False
+
+        for sabnzbd in self.settings.download_clients.sabnzbd:
+            logger.debug(
+                f"job_manager.py/_queue_has_items (Before any removal jobs): Checking if SABnzbd is connected"
+            )
+            # Check if any client is disconnected
+            if not await sabnzbd.check_sabnzbd_connected():
+                logger.warning(
+                    f">>> SABnzbd is disconnected. Skipping queue cleaning on {self.arr.name}.",
+                )
+                return False
         return True
 
     def _get_removal_jobs(self):

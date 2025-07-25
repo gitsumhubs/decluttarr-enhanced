@@ -3,7 +3,7 @@ name: Branch Delete
 on:
   delete:
     branches:
-      - '*' 
+      - "*"
 
 jobs:
   delete-branch-docker-image:

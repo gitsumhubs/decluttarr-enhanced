@@ -31,7 +31,7 @@ class RemoveSlow(RemovalJob):
 
             # Is Usenet -> skip
             if self._is_usenet(item):
-                continue  # No need to check for speed for usenet, since there users pay for speed
+                continue  # No need to check for speed for usenet
 
             # Completed but stuck -> skip
             if self._is_completed_but_stuck(item):
@@ -103,12 +103,20 @@ class RemoveSlow(RemovalJob):
 
 
     async def _get_download_progress(self, item, download_id):
-        # Grabs the progress from qbit if possible, else calculates it based on progress (imprecise)
+        # Grabs the progress from qbit or SABnzbd if possible, else calculates it based on progress (imprecise)
         if item["download_client_type"] == "qbittorrent":
             try:
                 progress = await item["download_client"].fetch_download_progress(download_id)
                 if progress is not None:
                     return progress
+            except Exception:  # noqa: BLE001
+                pass  # fall back below
+        elif item["download_client_type"] == "sabnzbd":
+            try:
+                progress = await item["download_client"].get_download_progress(download_id)
+                if progress is not None:
+                    # SABnzbd returns percentage, convert to bytes
+                    return (progress / 100.0) * item["size"]
             except Exception:  # noqa: BLE001
                 pass  # fall back below
         return item["size"] - item["sizeleft"]
@@ -135,6 +143,7 @@ class RemoveSlow(RemovalJob):
             if download_client.bandwidth_usage > DISABLE_OVER_BANDWIDTH_USAGE:
                 self.strikes_handler.pause_entry(download_id, "High Bandwidth Usage")
                 return True
+        # SABnzbd: Users typically pay for their Usenet speed, so bandwidth checking isn't applicable
 
         return False
 
@@ -157,4 +166,5 @@ class RemoveSlow(RemovalJob):
                 continue
             if item["download_client_type"] == "qbittorrent":
                 await download_client.set_bandwidth_usage()
+            # SABnzbd doesn't need bandwidth usage tracking for the same reason as usenet
             processed_clients.add(item["download_client"])

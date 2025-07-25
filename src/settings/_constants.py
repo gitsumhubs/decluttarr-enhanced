@@ -35,6 +35,7 @@ class MinVersions:
     readarr = "0.4.15.2787"
     whisparr = "2.0.0.548"
     qbittorrent = "4.3.0"
+    sabnzbd = "4.0.0"
 
 
 class FullQueueParameter:
