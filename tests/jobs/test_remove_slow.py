@@ -176,14 +176,14 @@ def test_compute_increment_and_speed(
     "item, previous_progress, mock_progress, expected_increment, expected_speed",
     [
         (
-            {"downloadId": "id1"},
+            {"downloadId": "id1", "download_client_type": "qbittorrent"},
             1_000_000,
             1_600_000,
             600_000,
             10.0,
         ),
         (
-            {"downloadId": "id2"},
+            {"downloadId": "id2", "download_client_type": "qbittorrent"},
             None,
             800_000,
             None,
