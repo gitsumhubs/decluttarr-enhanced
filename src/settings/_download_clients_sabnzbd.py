@@ -1,7 +1,7 @@
 from packaging import version
 
 from src.settings._constants import MinVersions
-from src.utils.common import make_request, wait_and_exit, extract_json_from_response
+from src.utils.common import make_request, wait_and_exit
 from src.utils.log_setup import logger
 
 
@@ -263,20 +263,59 @@ class SabnzbdClient:
             params=params,
         )
 
-    async def get_download_progress(self, nzo_id: str):
-        """Get progress of a specific download."""
+    async def fetch_download_progress(self, nzo_id: str):
+        """Get progress of a specific download in bytes."""
         queue_items = await self.get_queue_items()
         for item in queue_items:
             if item.get("nzo_id") == nzo_id:
-                # Calculate progress: (size - remaining) / size * 100
-                size_total = float(item.get("size", 0))
-                size_left = float(item.get("sizeleft", 0))
-                if size_total > 0:
-                    progress = ((size_total - size_left) / size_total) * 100
-                    return progress
+                # Calculate progress in bytes
+                size_total_mb = float(item.get("mb", 0))
+                size_left_mb = float(item.get("mbleft", 0))
+                downloaded_mb = size_total_mb - size_left_mb
+                downloaded_bytes = downloaded_mb * 1024 * 1024  # Convert MB to bytes
+                return downloaded_bytes
         return None
 
-    async def get_download_speed(self, nzo_id: str = None):
+    async def get_item_download_speed(self, nzo_id: str):
+        """Get download speed for a specific item using mbleft and timeleft."""
+        queue_items = await self.get_queue_items()
+        for item in queue_items:
+            if item.get("nzo_id") == nzo_id:
+                # Debug info
+                status = item.get("status", "Unknown")
+                mbleft = float(item.get("mbleft", 0))
+                timeleft_str = item.get("timeleft", "0:00:00")
+                timeleft_seconds = self._parse_timeleft_to_seconds(timeleft_str)
+                logger.debug(f"SABnzbd speed debug for {nzo_id}: status='{status}', mbleft={mbleft} MB, timeleft='{timeleft_str}' ({timeleft_seconds}s)")
+                # Calculate speed in KB/s: remaining MB divided by remaining time
+                speed_kbs = 0.0
+                if timeleft_seconds > 0 and mbleft > 0:
+                    speed_mbs = mbleft / timeleft_seconds  # MB per second
+                    speed_kbs = speed_mbs * 1024  # Convert to KB/s
+                    logger.debug(f"SABnzbd speed calculation: {mbleft} MB / {timeleft_seconds}s = {speed_mbs} MB/s = {speed_kbs} KB/s")
+                else:
+                    logger.debug(f"SABnzbd speed = 0 because: timeleft_seconds={timeleft_seconds}, mbleft={mbleft}")
+                return speed_kbs
+        return None
+
+    def _parse_timeleft_to_seconds(self, timeleft_str: str) -> int:
+        """Parse timeleft format like '0:16:44' or '3:11:03:24' to total seconds."""
+        try:
+            parts = timeleft_str.split(":")
+            if len(parts) == 4:  # "D:HH:MM:SS"
+                days, hours, minutes, seconds = map(int, parts)
+                return days * 86400 + hours * 3600 + minutes * 60 + seconds
+            if len(parts) == 3:  # "H:MM:SS"
+                hours, minutes, seconds = map(int, parts)
+                return hours * 3600 + minutes * 60 + seconds
+            if len(parts) == 2:  # "MM:SS"
+                minutes, seconds = map(int, parts)
+                return minutes * 60 + seconds
+            return 0
+        except (ValueError, AttributeError):
+            return 0
+
+    async def get_download_speed(self):
         """Get current download speed from SABnzbd status."""
         params = {
             "mode": "status",
@@ -291,14 +330,12 @@ class SabnzbdClient:
         )
         status_data = response.json()
         speed_str = status_data.get("status", {}).get("speed", "0 KB/s")
-        
         # Convert speed string to KB/s
         # SABnzbd returns speed like "1.2 MB/s", "500 KB/s", etc.
         if "MB/s" in speed_str:
             speed_value = float(speed_str.replace(" MB/s", ""))
             return speed_value * 1024  # Convert MB/s to KB/s
-        elif "KB/s" in speed_str:
+        if "KB/s" in speed_str:
             speed_value = float(speed_str.replace(" KB/s", ""))
             return speed_value
-        else:
-            return 0.0
+        return 0.0

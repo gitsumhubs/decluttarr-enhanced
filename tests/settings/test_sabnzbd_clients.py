@@ -1,8 +1,7 @@
-import pytest
 from unittest.mock import Mock, AsyncMock
+import pytest
 
-from src.settings._download_clients_sabnzbd import SabnzbdClient, SabnzbdClients, SabnzbdError
-from src.settings.settings import Settings
+from src.settings._download_clients_sabnzbd import SabnzbdClient, SabnzbdClients
 
 
 class TestSabnzbdClient:
@@ -11,13 +10,11 @@ class TestSabnzbdClient:
         settings = Mock()
         settings.min_versions = Mock()
         settings.min_versions.sabnzbd = "4.0.0"
-        
         client = SabnzbdClient(
             settings=settings,
             base_url="http://sabnzbd:8080",
             api_key="test_api_key"
         )
-        
         assert client.base_url == "http://sabnzbd:8080"
         assert client.api_url == "http://sabnzbd:8080/api"
         assert client.api_key == "test_api_key"
@@ -28,14 +25,12 @@ class TestSabnzbdClient:
         settings = Mock()
         settings.min_versions = Mock()
         settings.min_versions.sabnzbd = "4.0.0"
-        
         client = SabnzbdClient(
             settings=settings,
             base_url="http://sabnzbd:8080/",
             api_key="test_api_key",
             name="Custom SABnzbd"
         )
-        
         assert client.base_url == "http://sabnzbd:8080"
         assert client.api_url == "http://sabnzbd:8080/api"
         assert client.api_key == "test_api_key"
@@ -44,14 +39,12 @@ class TestSabnzbdClient:
     def test_init_missing_base_url(self):
         """Test SabnzbdClient initialization fails without base_url."""
         settings = Mock()
-        
         with pytest.raises(ValueError, match="SABnzbd client must have a 'base_url'"):
             SabnzbdClient(settings=settings, api_key="test_api_key")
 
     def test_init_missing_api_key(self):
         """Test SabnzbdClient initialization fails without api_key."""
         settings = Mock()
-        
         with pytest.raises(ValueError, match="SABnzbd client must have an 'api_key'"):
             SabnzbdClient(settings=settings, base_url="http://sabnzbd:8080")
 
@@ -61,34 +54,31 @@ class TestSabnzbdClient:
         settings = Mock()
         settings.min_versions = Mock()
         settings.min_versions.sabnzbd = "4.0.0"
-        
         client = SabnzbdClient(
             settings=settings,
             base_url="http://sabnzbd:8080",
             api_key="test_api_key"
         )
-        
         # Mock the get_queue_items method
         client.get_queue_items = AsyncMock(return_value=[
             {
                 "nzo_id": "test_id_1",
-                "size": "1000",
-                "sizeleft": "200"
+                "mb": "1000",
+                "mbleft": "200"
             },
             {
                 "nzo_id": "test_id_2", 
-                "size": "2000",
-                "sizeleft": "1000"
+                "mb": "2000",
+                "mbleft": "1000"
             }
-        ])
-        
+          ]
+        )
         # Test getting progress for existing download
-        progress = await client.get_download_progress("test_id_1")
-        expected_progress = ((1000 - 200) / 1000) * 100  # 80%
-        assert progress == expected_progress
-        
+        progress = await client.fetch_download_progress("test_id_1")
+        expected_bytes = (1000 - 200) * 1024 * 1024  # 800 MB in bytes
+        assert progress == expected_bytes
         # Test getting progress for non-existing download
-        progress = await client.get_download_progress("non_existing_id")
+        progress = await client.fetch_download_progress("non_existing_id")
         assert progress is None
 
 
@@ -97,7 +87,6 @@ class TestSabnzbdClients:
         """Test SabnzbdClients initialization with empty config."""
         config = {"download_clients": {}}
         settings = Mock()
-        
         clients = SabnzbdClients(config, settings)
         assert len(clients) == 0
 
@@ -121,7 +110,6 @@ class TestSabnzbdClients:
         settings = Mock()
         settings.min_versions = Mock()
         settings.min_versions.sabnzbd = "4.0.0"
-        
         clients = SabnzbdClients(config, settings)
         assert len(clients) == 2
         assert clients[0].base_url == "http://sabnzbd1:8080"
@@ -139,7 +127,6 @@ class TestSabnzbdClients:
             }
         }
         settings = Mock()
-        
         clients = SabnzbdClients(config, settings)
         assert len(clients) == 0
         assert "Invalid config format for sabnzbd clients" in caplog.text
@@ -157,7 +144,6 @@ class TestSabnzbdClients:
             }
         }
         settings = Mock()
-        
         clients = SabnzbdClients(config, settings)
         assert len(clients) == 0
         assert "Error parsing sabnzbd client config" in caplog.text
