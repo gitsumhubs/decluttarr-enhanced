@@ -281,20 +281,14 @@ class SabnzbdClient:
         queue_items = await self.get_queue_items()
         for item in queue_items:
             if item.get("nzo_id") == nzo_id:
-                # Debug info
-                status = item.get("status", "Unknown")
                 mbleft = float(item.get("mbleft", 0))
                 timeleft_str = item.get("timeleft", "0:00:00")
                 timeleft_seconds = self._parse_timeleft_to_seconds(timeleft_str)
-                logger.debug(f"SABnzbd speed debug for {nzo_id}: status='{status}', mbleft={mbleft} MB, timeleft='{timeleft_str}' ({timeleft_seconds}s)")
                 # Calculate speed in KB/s: remaining MB divided by remaining time
                 speed_kbs = 0.0
                 if timeleft_seconds > 0 and mbleft > 0:
                     speed_mbs = mbleft / timeleft_seconds  # MB per second
                     speed_kbs = speed_mbs * 1024  # Convert to KB/s
-                    logger.debug(f"SABnzbd speed calculation: {mbleft} MB / {timeleft_seconds}s = {speed_mbs} MB/s = {speed_kbs} KB/s")
-                else:
-                    logger.debug(f"SABnzbd speed = 0 because: timeleft_seconds={timeleft_seconds}, mbleft={mbleft}")
                 return speed_kbs
         return None
 
