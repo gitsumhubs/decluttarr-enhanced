@@ -45,7 +45,6 @@ class RemoveBadFiles(RemovalJob):
             elif download_client_type == "sabnzbd":
                 # SABnzbd doesn't support bad file removal in the same way as BitTorrent
                 # Usenet doesn't have the concept of "availability" or individual file selection
-                logger.debug("remove_bad_files: Skipping SABnzbd downloads (not applicable for Usenet)")
                 continue
         return affected_items
 

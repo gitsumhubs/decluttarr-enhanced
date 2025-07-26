@@ -127,10 +127,10 @@ class SabnzbdClient:
             logger.error(f"-- | SABnzbd\n❗️ {e}\n{tip}\n")
             wait_and_exit()
 
-    async def check_sabnzbd_connected(self):
+    async def check_connected(self):
         """Check if SABnzbd is connected and operational."""
         logger.debug(
-            "_download_clients_sabnzbd.py/check_sabnzbd_connected: Checking if SABnzbd is connected"
+            "_download_clients_sabnzbd.py/check_connected: Checking if SABnzbd is connected"
         )
         params = {
             "mode": "status",
