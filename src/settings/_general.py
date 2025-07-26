@@ -10,8 +10,8 @@ class General:
 
     log_level: str = "INFO"
     test_run: bool = False
-    ssl_verification: bool = True
     timer: float = 10.0
+    ssl_verification: bool = True
     ignored_download_clients: list = []
     private_tracker_handling: str = "remove"
     public_tracker_handling: str = "remove"
