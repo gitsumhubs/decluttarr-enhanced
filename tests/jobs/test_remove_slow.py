@@ -37,7 +37,7 @@ def test_checked_before(checked_ids, item, expected_return, expected_checked_ids
                 "status": "downloading",
                 "protocol": "torrent",
                 "download_client": AsyncMock(),
-                "download_client_type": "qBittorrent",
+                "download_client_type": "qbittorrent",
             },
             False,
         ),
@@ -83,18 +83,6 @@ def test_not_downloading(item, expected_result):
     assert result == expected_result
 
 
-@pytest.mark.parametrize(
-    ("item", "expected_result"),
-    [
-        ({"protocol": "usenet"}, True),
-        ({"protocol": "torrent"}, False),
-        ({}, False),
-    ],
-)
-def test_is_usenet(item, expected_result):
-    removal_job = shared_fix_affected_items(RemoveSlow)
-    result = removal_job._is_usenet(item)
-    assert result == expected_result
 
 
 @pytest.mark.parametrize(
@@ -137,6 +125,10 @@ def test_not_slow(speed, expected_result):
             "qbittorrent",
             800,
         ),  # qbit is more updated, has progressed from 100 to 800 since arr refreshed last
+        (
+            "sabnzbd",
+            800,
+        ),  # sabnzbd is more updated, has progressed from 100 to 800 since arr refreshed last
     ],
 )
 async def test_get_download_progress(client_type, expected_progress):
@@ -184,14 +176,14 @@ def test_compute_increment_and_speed(
     "item, previous_progress, mock_progress, expected_increment, expected_speed",
     [
         (
-            {"downloadId": "id1"},
+            {"downloadId": "id1", "download_client_type": "qbittorrent"},
             1_000_000,
             1_600_000,
             600_000,
             10.0,
         ),
         (
-            {"downloadId": "id2"},
+            {"downloadId": "id2", "download_client_type": "qbittorrent"},
             None,
             800_000,
             None,
@@ -242,7 +234,8 @@ async def test_get_progress_stats(
         (0, "qbittorrent", 0.81, True),  # above threshold 0.8
         (1, "qbittorrent", 0.8, False),  # equal to threshold 0.8
         (2, "qbittorrent", 0.79, False),  # below threshold 0.8
-        (3, "other_client", 0.9, False),  # different client type
+        (3, "sabnzbd", 0.9, False),  # SABnzbd client type (no bandwidth checking)
+        (4, "other_client", 0.9, False),  # different client type
     ],
 )
 def test_high_bandwidth_usage(download_id, download_client_type, bandwidth_usage, expected):
@@ -310,6 +303,7 @@ async def test_update_bandwidth_usage_calls_once_per_client():
     qb_client1.set_bandwidth_usage = AsyncMock()
     qb_client2 = MagicMock(name="QBClient2")
     qb_client2.set_bandwidth_usage = AsyncMock()
+    sabnzbd_client = MagicMock(name="SABnzbdClient")
     other_client = MagicMock(name="OtherClient")
     other_client.set_bandwidth_usage = AsyncMock()
 
@@ -320,6 +314,7 @@ async def test_update_bandwidth_usage_calls_once_per_client():
             "download_client_type": "qbittorrent",
         },  # duplicate client
         {"download_client": qb_client2, "download_client_type": "qbittorrent"},
+        {"download_client": sabnzbd_client, "download_client_type": "sabnzbd"},  # SABnzbd client
         {"download_client": other_client, "download_client_type": "other"},
     ]
 
@@ -328,7 +323,8 @@ async def test_update_bandwidth_usage_calls_once_per_client():
     # Verify set_bandwidth_usage called once per unique qbittorrent client
     qb_client1.set_bandwidth_usage.assert_awaited_once()
     qb_client2.set_bandwidth_usage.assert_awaited_once()
-    # Verify other client method was not called
+    # Verify SABnzbd and other client methods were not called (no bandwidth tracking for them)
+    assert not hasattr(sabnzbd_client, 'set_bandwidth_usage') or not sabnzbd_client.set_bandwidth_usage.called
     other_client.set_bandwidth_usage.assert_not_awaited()
 
 
@@ -345,8 +341,6 @@ async def test_update_bandwidth_usage_calls_once_per_client():
         # Not Downloading -> skip
         ({"downloadId": "not_downloading"}, False),
 
-        # Is Usenet -> skip
-        ({"downloadId": "usenet"}, False),
 
         # Completed but stuck -> skip
         ({"downloadId": "completed_but_stuck"}, False),
@@ -375,7 +369,6 @@ async def test_find_affected_items_simple(queue_item, should_be_affected):
     removal_job._checked_before = lambda item, checked_ids: item.get("downloadId") == "checked_before"
     removal_job._missing_keys = lambda item: item.get("downloadId") == "keys_missing"
     removal_job._not_downloading = lambda item: item.get("downloadId") == "not_downloading"
-    removal_job._is_usenet = lambda item: item.get("downloadId") == "usenet"
     removal_job._is_completed_but_stuck = lambda item: item.get("downloadId") == "completed_but_stuck"
     removal_job._high_bandwidth_usage = lambda download_client, download_client_type=None: queue_item.get("downloadId") == "high_bandwidth"
     removal_job._not_slow = lambda speed: queue_item.get("downloadId") == "not_slow"

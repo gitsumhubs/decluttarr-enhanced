@@ -220,7 +220,7 @@ class QbitClient:
             logger.error(f"-- | qBittorrent\n❗️ {e}\n{tip}\n")
             wait_and_exit()
 
-    async def check_qbit_connected(self):
+    async def check_connected(self):
         """Check if the qBittorrent is connected to internet."""
         logger.debug(
             "_download_clients_qBit.py/check_qbit_reachability: Checking if qbit is connected to the internet"

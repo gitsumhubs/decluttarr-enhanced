@@ -44,7 +44,7 @@ async def main():
     while True:
         logger.info("-" * 50)
 
-        # Refresh qBit Cookies
+        # Refresh qBit Cookies (SABnzbd doesn't need cookie refresh)
         for qbit in settings.download_clients.qbittorrent:
             await qbit.refresh_cookie()
 

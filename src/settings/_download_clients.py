@@ -1,16 +1,19 @@
 from src.settings._config_as_yaml import get_config_as_yaml
 from src.settings._download_clients_qbit import QbitClients
+from src.settings._download_clients_sabnzbd import SabnzbdClients
 
-DOWNLOAD_CLIENT_TYPES = ["qbittorrent"]
+DOWNLOAD_CLIENT_TYPES = ["qbittorrent", "sabnzbd"]
 
 
 class DownloadClients:
     """Represents all download clients."""
 
     qbittorrent = None
+    sabnzbd = None
 
     def __init__(self, config, settings):
         self._set_qbit_clients(config, settings)
+        self._set_sabnzbd_clients(config, settings)
         self.check_unique_download_client_types()
 
     def _set_qbit_clients(self, config, settings):
@@ -28,11 +31,18 @@ class DownloadClients:
                 ]:
                     setattr(settings.general, key, None)
 
+    def _set_sabnzbd_clients(self, config, settings):
+        download_clients = config.get("download_clients", {})
+        if isinstance(download_clients, dict):
+            self.sabnzbd = SabnzbdClients(config, settings)
+        if not self.sabnzbd:
+            self.sabnzbd = SabnzbdClients({}, settings)  # Initialize empty list
+
     def config_as_yaml(self):
         """Log all download clients."""
         return get_config_as_yaml(
-            {"qbittorrent": self.qbittorrent},
-            sensitive_attributes={"username", "password", "cookie"},
+            {"qbittorrent": self.qbittorrent, "sabnzbd": self.sabnzbd},
+            sensitive_attributes={"username", "password", "cookie", "api_key"},
             internal_attributes={"api_url", "cookie", "settings", "min_version"},
             hide_internal_attr=True,
         )
@@ -101,7 +111,7 @@ class DownloadClients:
         """
         mapping = {
             "QBittorrent": "qbittorrent",
-            # Only qbit configured for now
+            "SABnzbd": "sabnzbd",
         }
         download_client_type = mapping.get(arr_download_client_implementation)
         return download_client_type

@@ -66,3 +66,7 @@ download_clients:
       # username: xxxx # (optional -> if not provided, assuming not needed)
       # password: xxxx # (optional -> if not provided, assuming not needed)
       # name: "qBittorrent" # (optional -> if not provided, assuming "qBittorrent". Must correspond with what is specified in your *arr as download client name)
+  # sabnzbd:
+  #   - base_url: "http://sabnzbd:8080" # SABnzbd server URL
+  #     api_key: "your_api_key_here" # (required -> SABnzbd API key)
+  #     # name: "SABnzbd" # (optional -> if not provided, assuming "SABnzbd". Must correspond with what is specified in your *arr as download client name)

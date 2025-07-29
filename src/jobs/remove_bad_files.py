@@ -42,6 +42,10 @@ class RemoveBadFiles(RemovalJob):
             if download_client_type == "qbittorrent":
                 client_items = await self._handle_qbit(download_client, download_ids)
                 affected_items.extend(client_items)
+            elif download_client_type == "sabnzbd":
+                # SABnzbd doesn't support bad file removal in the same way as BitTorrent
+                # Usenet doesn't have the concept of "availability" or individual file selection
+                continue
         return affected_items
 
     def _group_download_ids_by_client(self):

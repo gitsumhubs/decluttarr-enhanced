@@ -35,7 +35,7 @@ class JobManager:
         if not await self._queue_has_items():
             return
 
-        if not await self._qbit_connected():
+        if not await self._download_clients_connected():
             return
 
         # Refresh trackers
@@ -57,11 +57,17 @@ class JobManager:
             return
         if self.settings.jobs.search_missing.enabled:
             await SearchHandler(
-                arr=self.arr, settings=self.settings, missing_or_cutoff="missing", job_name="search_missing"
+                arr=self.arr,
+                settings=self.settings,
+                missing_or_cutoff="missing",
+                job_name="search_missing",
             ).handle_search()
         if self.settings.jobs.search_unmet_cutoff.enabled:
             await SearchHandler(
-                arr=self.arr, settings=self.settings, missing_or_cutoff="cutoff", job_name="search_cutoff_unmet"
+                arr=self.arr,
+                settings=self.settings,
+                missing_or_cutoff="cutoff",
+                job_name="search_cutoff_unmet",
             ).handle_search()
 
     async def _queue_has_items(self):
@@ -81,16 +87,22 @@ class JobManager:
         logger.verbose("Removal Jobs: None triggered (Queue is empty)")
         return False
 
-    async def _qbit_connected(self):
-        for qbit in self.settings.download_clients.qbittorrent:
+    async def _download_clients_connected(self):
+        for clients in [
+            self.settings.download_clients.qbittorrent,
+            self.settings.download_clients.sabnzbd,
+        ]:
+            if not await self._check_client_connection_status(clients):
+                return False
+        return True
+
+    async def _check_client_connection_status(self, clients):
+        for client in clients:
             logger.debug(
-                f"job_manager.py/_queue_has_items (Before any removal jobs): Checking if qbit is connected to the internet"
+                f"job_manager.py/_check_client_connection_status: Checking if {client.name} is connected"
             )
-            # Check if any client is disconnected
-            if not await qbit.check_qbit_connected():
-                logger.warning(
-                    f">>> qBittorrent is disconnected. Skipping queue cleaning on {self.arr.name}.",
-                )
+            if not await client.check_connected():
+                logger.warning(f">>> {client.name} is disconnected. Skipping queue cleaning on {self.arr.name}.")
                 return False
         return True
 

@@ -29,10 +29,6 @@ class RemoveSlow(RemovalJob):
             if self._not_downloading(item):
                 continue
 
-            # Is Usenet -> skip
-            if self._is_usenet(item):
-                continue  # No need to check for speed for usenet, since there users pay for speed
-
             # Completed but stuck -> skip
             if self._is_completed_but_stuck(item):
                 logger.info(
@@ -75,9 +71,6 @@ class RemoveSlow(RemovalJob):
         required_keys = {"downloadId", "size", "sizeleft", "status", "protocol", "download_client", "download_client_type"}
         return not required_keys.issubset(item)
 
-    @staticmethod
-    def _is_usenet(item) -> bool:
-        return item.get("protocol") == "usenet"
 
     @staticmethod
     def _not_downloading(item) -> bool:
@@ -98,13 +91,29 @@ class RemoveSlow(RemovalJob):
             download_id, download_progress,
         )
 
+        # For SABnzbd, use calculated speed from API data
+        if item["download_client_type"] == "sabnzbd":
+            try:
+                api_speed = await item["download_client"].get_item_download_speed(download_id)
+                if api_speed is not None:
+                    speed = api_speed
+                    logger.debug(f"SABnzbd API speed for {item['title']}: {speed} KB/s")
+            except Exception as e:  # noqa: BLE001
+                logger.debug(f"SABnzbd get_item_download_speed failed: {e}")
         self.arr.tracker.download_progress[download_id] = download_progress
         return download_progress, previous_progress, increment, speed
 
 
     async def _get_download_progress(self, item, download_id):
-        # Grabs the progress from qbit if possible, else calculates it based on progress (imprecise)
+        # Grabs the progress from qbit or SABnzbd if possible, else calculates it based on progress (imprecise)
         if item["download_client_type"] == "qbittorrent":
+            try:
+                progress = await item["download_client"].fetch_download_progress(download_id)
+                if progress is not None:
+                    return progress
+            except Exception:  # noqa: BLE001
+                pass  # fall back below
+        elif item["download_client_type"] == "sabnzbd":
             try:
                 progress = await item["download_client"].fetch_download_progress(download_id)
                 if progress is not None:
@@ -135,6 +144,7 @@ class RemoveSlow(RemovalJob):
             if download_client.bandwidth_usage > DISABLE_OVER_BANDWIDTH_USAGE:
                 self.strikes_handler.pause_entry(download_id, "High Bandwidth Usage")
                 return True
+        # SABnzbd: Bandwidth checking isn't applicable to usenet usage
 
         return False
 
@@ -157,4 +167,5 @@ class RemoveSlow(RemovalJob):
                 continue
             if item["download_client_type"] == "qbittorrent":
                 await download_client.set_bandwidth_usage()
+            # SABnzbd: Since bandwith checking isn't applicable, setting bandwidth usage is irrelevant
             processed_clients.add(item["download_client"])
