@@ -39,6 +39,7 @@ Looking to **upgrade from V1 to V2**? Look [here](#upgrading-from-v1-to-v2)
     - [REMOVE_UNMONITORED](#remove_unmonitored)
     - [SEARCH_CUTOFF_UNMET](#search_unmet_cutoff)
     - [SEARCH_MISSING](#search_missing)
+    - [DETECT_DELETIONS](#detect_deletions)
   - [Instances](#arr-instances)
     - [SONARR](#sonarr)
     - [RADARR](#radarr)
@@ -160,6 +161,8 @@ services:
     volumes:
       - $DOCKERDIR/appdata/decluttarr/config.yaml:/app/config/config.yaml
       # - $DOCKERDIR/appdata/decluttarr/logs:/app/logs # Uncomment to get logs in text file, too
+      # - $DOCKERDIR/appdata/decluttarr/logs:/app/logs # Uncomment to get logs in text file, too
+      # - $DATADIR/media:/media # If you use detect_deletions, add the identical mount paths that you use in your sonarr/radarr instances. This may be different to this example!
 ```
 
 
@@ -218,6 +221,7 @@ services:
       REMOVE_UNMONITORED: True
       SEARCH_BETTER: True
       SEARCH_MISSING: True
+      DETECT_DELETIONS: True
 
       # # --- OR: Jobs (with job-specific settings) ---
       # Alternatively, you can use the below notation, which for certain jobs allows you to set additional parameters
@@ -249,6 +253,7 @@ services:
       # SEARCH_MISSING: |
       #   min_days_between_searches: 7
       #   max_concurrent_searches: 3
+      # DETECT_DELETIONS:
 
       # --- Instances ---
       SONARR: >
@@ -282,7 +287,8 @@ services:
         - base_url: "http://qbittorrent:8080"
           name: "qBittorrent 2" 
     volumes:
-      # - $DOCKERDIR/appdata/decluttarr/logs:/app/logs # Uncomment to get logs in text file, too
+      # - $DOCKERDIR/appdata/decluttarr/logs:/app/logs # Uncomment to get logs in text file, too      
+      # - $DATADIR/media:/media # If you use detect_deletions, add the identical mount paths that you use in your sonarr/radarr instances. This may be different to this example!
 ```
 ## Upgrading from V1 to V2
 
@@ -298,6 +304,7 @@ Decluttarr v2 is a major update with a cleaner config format and powerful new fe
 - 🐌 **Adaptive slowness**: Slow downloads-removal can be dynamically turned on/off depending on overall bandwidth usage
 - 📄 **Log files**: Logs can now be retrieved from a log file
 - 📌 **Removal behavior**: Rather than removing downloads, they can now also be tagged for later removal (ie. to allow for seed targets to be reached first). This can be done separately for private and public trackers
+- 📌 **Deletion detection**: If movies or tv shows get deleted (for instance via Plex), decluttarr can notice that and refresh the respective item
 
 ---
 
@@ -575,6 +582,26 @@ This is the interesting section. It defines which job you want decluttarr to run
 -   Note:
       - You can also specify min_days_between_searches and max_concurrent_searches as job defaults (see above) or simply rely on the system defaults
 
+
+#### DETECT_DELETIONS
+
+-   Background:
+    When your media files (movies/TV shows) get deleted on the file system, radarr/sonarr won't notice that immediately
+    Radarr runs a scan for deletions every 24h and sonarr every 12h, and marks the respective items as "unmonitored"
+    If in the meantime a better version of a movie/TV show is found by radarr/sonarr, it will be re-downloaded
+    Therefore, you might be deleting the same items again and again (for instance, from Plex)
+-   What this does:
+    This job monitors the media folders you have set up in sonarr/radarr (lidarr, readarr, and whisparr are not supported at this point).
+    If a file gets deleted in there, it tries to find out which movie/TV show it belongs to and refreshes it.
+    Thereby, deleted items get "unmonitored" and therefore not re-downloaded.
+-   Type: Boolean
+-   Permissible Values: 
+    - True, False 
+-   Is Mandatory: No (Defaults to False)
+-   Note:
+      - Decluttarr must have access to the paths that you have set up in your radarr/sonarr instances
+      - The paths must look exactly identical
+      - If you use decluttarr in docker, make sure that the radarr/sonarr volumes with your media are mounted the same way in decluttarr
 ---
 
 ### **Arr Instances**
