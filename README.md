@@ -525,11 +525,12 @@ This is the interesting section. It defines which job you want decluttarr to run
 
 -   Steers whether slow downloads are removed from the queue
 -   Blocklisted: Yes
--   Note: 
-      Radarr, Sonarr, etc. only update the info about progress and speed of the queue items periodically.
-      Therefore, relying only on that information is imprecise to establish whether a download is slow.
-      It is advised that you configure qBittorrent (for torrents) and or SABnzbd (for Usenet), so that decluttarr can query those information real-time.
-      - Additional benefit when having qBittorrent configured:
+-   Note: Configure qBittorrent and/or SABnzbd
+      - Improved Speed Measurement:
+        - Radarr, Sonarr, etc. only update the info about progress and speed of the queue items periodically.
+        - Therefore, relying only on that information is imprecise to establish whether a download is slow.
+        - It is advised that you configure qBittorrent (for torrents) and or SABnzbd (for Usenet), so that decluttarr can query those information real-time.
+      - Auto-disabling when bandwith maxed out (qBittorrent):
         - The remove_slow check is automatically temporarily disabled if qBittorrent is already using more than 80% of your available download bandwidth.
         - For this to work, you must set a Global Download Rate Limit in qBittorrent. Otherwise, unlimited capacity is assumed, and the auto-disable feature will never trigger.
         - Make sure to configure the limit in the correct place — either the standard or the alternative limits, depending on which one is active in your setup.
