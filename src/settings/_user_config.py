@@ -11,6 +11,11 @@ CONFIG_MAPPING = {
         "TIMER",
         "SSL_VERIFICATION",
         "IGNORED_DOWNLOAD_CLIENTS",
+        "PRIVATE_TRACKER_HANDLING",
+        "PUBLIC_TRACKER_HANDLING",
+        "OBSOLETE_TAG",
+        "PROTECTED_TAG",
+        "DETECT_DELETIONS",
     ],
     "job_defaults": [
         "MAX_STRIKES",

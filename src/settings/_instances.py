@@ -1,3 +1,4 @@
+from pathlib import Path
 import requests
 from packaging import version
 
@@ -8,6 +9,8 @@ from src.settings._constants import (
     DetailItemSearchCommand,
     FullQueueParameter,
     MinVersions,
+    RefreshItemKey,
+    RefreshItemCommand,
 )
 from src.utils.common import make_request, wait_and_exit, extract_json_from_response
 from src.utils.log_setup import logger
@@ -48,7 +51,6 @@ class Tracker:
 
 class ArrError(Exception):
     pass
-
 
 
 class ArrInstances(list):
@@ -152,6 +154,9 @@ class ArrInstance:
         self.detail_item_id_key = self.detail_item_key + "Id"
         self.detail_item_ids_key = self.detail_item_key + "Ids"
         self.detail_item_search_command = getattr(DetailItemSearchCommand, arr_type)
+        self.refresh_item_key = getattr(RefreshItemKey, arr_type)
+        self.refresh_item_id_key = self.refresh_item_key + "Id"
+        self.refresh_item_command = getattr(RefreshItemCommand, arr_type)
 
     async def _check_ui_language(self):
         """Check if the UI language is set to English."""
@@ -296,7 +301,6 @@ class ArrInstance:
                     logger.info(tip)
         return
 
-
     async def remove_queue_item(self, queue_id, *, blocklist=False):
         """
         Remove a specific queue item from the queue by its queue id.
@@ -345,3 +349,39 @@ class ArrInstance:
         headers = {"X-Api-Key": self.api_key}
         response = await make_request("get", endpoint, self.settings, headers=headers)
         return response.json()
+
+    async def get_root_folders(self):
+        """Fetch Root folders."""
+        endpoint = self.api_url + "/rootFolder"
+        headers = {"X-Api-Key": self.api_key}
+        response = await make_request("get", endpoint, self.settings, headers=headers)
+        return response.json()
+
+    async def get_refresh_item(self):
+        endpoint = self.api_url + "/" + self.refresh_item_key
+        headers = {"X-Api-Key": self.api_key}
+        response = await make_request("get", endpoint, self.settings, headers=headers)
+        return response.json()
+
+    async def get_refresh_item_by_path(self, folder_path):
+        """Returns the movie/series id that matches a given folder"""
+        items = await self.get_refresh_item()
+        for item in items:
+            if Path(folder_path).is_relative_to(Path(item.get("path"))):
+                return item
+        return None
+
+    async def refresh_item(self, refresh_item_id):
+        # Refresh the queue by making the POST request using an external make_request function
+        logger.debug("_instances.py/_refresh_item: Refreshing Item")
+        await make_request(
+            method="POST",
+            endpoint=f"{self.api_url}/command",
+            settings=self.settings,
+            json={
+                "name": self.refresh_item_command,
+                self.refresh_item_id_key: refresh_item_id,
+            },
+            headers={"X-Api-Key": self.api_key},
+        )
+        return
