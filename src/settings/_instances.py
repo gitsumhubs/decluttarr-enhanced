@@ -379,7 +379,7 @@ class ArrInstance:
             endpoint=f"{self.api_url}/command",
             settings=self.settings,
             json={
-                "name": self.detail_item_search_command,
+                "name": self.refresh_item_command,
                 self.refresh_item_id_key: refresh_item_id,
             },
             headers={"X-Api-Key": self.api_key},
