@@ -154,9 +154,10 @@ class ArrInstance:
         self.detail_item_id_key = self.detail_item_key + "Id"
         self.detail_item_ids_key = self.detail_item_key + "Ids"
         self.detail_item_search_command = getattr(DetailItemSearchCommand, arr_type)
-        self.refresh_item_key = getattr(RefreshItemKey, arr_type)
-        self.refresh_item_id_key = self.refresh_item_key + "Id"
-        self.refresh_item_command = getattr(RefreshItemCommand, arr_type)
+        if self.arr_type in ('radarr','sonarr'):
+            self.refresh_item_key = getattr(RefreshItemKey, arr_type)
+            self.refresh_item_id_key = self.refresh_item_key + "Id"
+            self.refresh_item_command = getattr(RefreshItemCommand, arr_type)
 
     async def _check_ui_language(self):
         """Check if the UI language is set to English."""

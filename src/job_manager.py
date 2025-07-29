@@ -29,7 +29,7 @@ class JobManager:
         # Check removal jobs
         removal_jobs = self._get_removal_jobs()
         if not any(removal_job.job.enabled for removal_job in removal_jobs):
-            logger.verbose("Removel Jobs: None triggered (No jobs active)")
+            logger.verbose("Removal Jobs: None triggered (No jobs active)")
             return
 
         if not await self._queue_has_items():
