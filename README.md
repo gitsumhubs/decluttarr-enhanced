@@ -300,6 +300,7 @@ Decluttarr v2 is a major update with a cleaner config format and powerful new fe
 - 🔁 **YAML in local setups**: For local setups: Replaced config.conf file with config.yaml, offering better readability and more granular / explicit control
 - 🐳 **YAML in container setups**: Same YAML config.yaml can be used when running in container setups; previuosly, external configs were not possible
 - 💥 **Multi-instance support**: Decluttarr can now handle multiple Sonarr/Radarr etc. instances, as well as multiple qBittorrent Instances
+- 💛 **SABnzbd support**: Slowness can now also be detected on Usenet downloads 
 - 🧼 **Bad files handling**: Added ability to not download potentially malicious files and files such as trailers / samples
 - 🐌 **Adaptive slowness**: Slow downloads-removal can be dynamically turned on/off depending on overall bandwidth usage
 - 📄 **Log files**: Logs can now be retrieved from a log file
