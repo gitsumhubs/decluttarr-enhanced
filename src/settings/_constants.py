@@ -60,3 +60,13 @@ class DetailItemSearchCommand:
     lidarr = "AlbumSearch"
     readarr = "BookSearch"
     whisparr = None
+
+
+class RefreshItemKey:
+    radarr = "movie"
+    sonarr = "series"
+
+
+class RefreshItemCommand:
+    radarr = "RefreshMovie"
+    sonarr = "RefreshSeries"

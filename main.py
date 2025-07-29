@@ -8,9 +8,11 @@ from src.job_manager import JobManager
 from src.settings.settings import Settings
 from src.utils.log_setup import logger
 from src.utils.startup import launch_steps
+from src.deletion_handler.deletion_handler import WatcherManager
 
 settings = Settings()
 job_manager = JobManager(settings)
+watch_manager = WatcherManager(settings)
 
 def terminate(sigterm: signal.SIGTERM, frame: types.FrameType) -> None:  # noqa: ARG001, pylint: disable=unused-argument
 
@@ -24,6 +26,7 @@ def terminate(sigterm: signal.SIGTERM, frame: types.FrameType) -> None:  # noqa:
     """
 
     logger.info(f"Termination signal received at {datetime.datetime.now()}.")  # noqa: DTZ005
+    watch_manager.stop()
     sys.exit(0)
 
 async def wait_next_run():
@@ -40,6 +43,8 @@ async def wait_next_run():
 async def main():
     await launch_steps(settings)
 
+    if settings.jobs.detect_deletions:
+        await WatcherManager(settings).setup()
     # Start Cleaning
     while True:
         logger.info("-" * 50)

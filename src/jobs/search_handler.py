@@ -135,7 +135,3 @@ class SearchHandler:
                 season = item.get("seasonNumber", "00")
                 season_numbering = f"S{int(season):02}/E{int(episode):02}"
                 logger.verbose(f"- {series_title} ({season_numbering})")
-
-    async def _get_series_dict(self):
-        series = await self.arr.rest_get("series")
-        return {s["id"]: s for s in series}

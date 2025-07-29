@@ -107,6 +107,8 @@ class Jobs:
             max_concurrent_searches=self.job_defaults.max_concurrent_searches,
             min_days_between_searches=self.job_defaults.min_days_between_searches,
         )
+        self.detect_deletions = JobParams()
+
 
     def _set_job_configs(self, config):
         # Populate jobs from YAML config

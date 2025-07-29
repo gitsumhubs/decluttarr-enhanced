@@ -15,6 +15,7 @@ CONFIG_MAPPING = {
         "PUBLIC_TRACKER_HANDLING",
         "OBSOLETE_TAG",
         "PROTECTED_TAG",
+        "DETECT_DELETIONS",
     ],
     "job_defaults": [
         "MAX_STRIKES",
