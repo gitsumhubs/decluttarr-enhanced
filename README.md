@@ -4,6 +4,8 @@ An improved version of decluttarr with enhanced logging, error detection, and a 
 
 This was all AI vibe coded. I can't code, so beware, lol. Excuse this summary if AI made it come off cocky. Don't feel like editing further. 100% credit to the OG creator for his real efforts.
 
+Warning: work in progeress. AI fkd my GUI, but other modifications working I believe. 
+
 **TL;DR:**
 
   What it is: An improved version of decluttarr with better logging and a web GUI.
