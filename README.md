@@ -70,8 +70,9 @@ services:
       - PUID=1000
       - PGID=1000
       - LOG_LEVEL=INFO
-      - REMOVE_TIMER=6
-      - REMOVE_FAILED=True
+      - TIMER=6
+      - MAX_CONCURRENT_SEARCHES=3
+      - REMOVE_FAILED_DOWNLOADS=True
       - REMOVE_FAILED_IMPORTS=True
       - REMOVE_METADATA_MISSING=True
       - REMOVE_MISSING_FILES=True
@@ -83,18 +84,12 @@ services:
       - PERMITTED_ATTEMPTS=1
       - IGNORE_PRIVATE_TRACKERS=False
       - NO_STALLED_REMOVAL_QBIT_TAG=Don't Kill
-      - RADARR_URL=http://192.168.1.94:7878
-      - RADARR_KEY=YOUR_RADARR_API_KEY
-      - SONARR_URL=http://192.168.1.94:8989
-      - SONARR_KEY=YOUR_SONARR_API_KEY
+      - 'RADARR=[{base_url: "http://localhost:7878", api_key: "INSERT_YOUR_API_KEY"}]'
+      - 'SONARR=[{base_url: "http://localhost:8989", api_key: "INSERT_YOUR_API_KEY"}]'
       # Optional: Uncomment and configure additional *arr apps
-      # - LIDARR_URL=http://YOUR_LIDARR_IP:8686
-      # - LIDARR_KEY=YOUR_LIDARR_API_KEY
-      # - READARR_URL=http://YOUR_READARR_IP:8787
-      # - READARR_KEY=YOUR_READARR_API_KEY
-      # - QBITTORRENT_URL=http://YOUR_QBIT_IP:8080
-      # - QBITTORRENT_USERNAME=YOUR_QBIT_USERNAME
-      # - QBITTORRENT_PASSWORD=YOUR_QBIT_PASSWORD
+      # - 'LIDARR=[{base_url: "http://YOUR_LIDARR_IP:8686", api_key: "YOUR_LIDARR_API_KEY"}]'
+      # - 'READARR=[{base_url: "http://YOUR_READARR_IP:8787", api_key: "YOUR_READARR_API_KEY"}]'
+      # - 'QBITTORRENT=[{base_url: "http://YOUR_QBIT_IP:8080", username: "YOUR_QBIT_USERNAME", password: "YOUR_QBIT_PASSWORD"}]'
       networks:
       - decluttarr_network
 
@@ -112,7 +107,7 @@ services:
       container_name: decluttarr-manager
       restart: unless-stopped
       ports:
-      - 8081:8081
+      - 8087:8081
       volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - .:/docker/decluttarr
