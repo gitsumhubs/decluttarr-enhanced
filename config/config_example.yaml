@@ -30,7 +30,7 @@ jobs:
     # max_strikes: 3
   remove_missing_files:
   remove_orphans:
-  remove_slow:
+  # remove_slow: # Disabled by default to prevent AllDebrid/RDT false positives
     # min_speed: 100
     # max_strikes: 3
   remove_stalled:

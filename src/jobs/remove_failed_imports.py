@@ -32,13 +32,21 @@ class RemoveFailedImports(RemovalJob):
         if not all(field in item for field in required_fields):
             return False
 
-        # Check if the item's status is completed and the tracked status is warning
-        if item["status"] != "completed" or item["trackedDownloadStatus"] != "warning":
-            return False
-
-        # Check if the tracked download state is one of the allowed states
-        # If all checks pass, the item is valid
-        return not (item["trackedDownloadState"] not in {"importPending", "importFailed", "importBlocked"})
+        # Enhanced detection: Check for both original conditions and qBittorrent error states
+        # Original: completed status with warning tracked status
+        original_condition = (
+            item["status"] == "completed" and 
+            item["trackedDownloadStatus"] == "warning" and
+            item["trackedDownloadState"] in {"importPending", "importFailed", "importBlocked"}
+        )
+        
+        # Enhanced: warning status with downloading state (catches "qBittorrent is reporting an error")
+        enhanced_condition = (
+            item["status"] == "warning" and 
+            item["trackedDownloadState"] == "downloading"
+        )
+        
+        return original_condition or enhanced_condition
 
     def _prepare_removal_messages(self, item, patterns) -> list[str]:
         """Prepare removal messages, adding the tracked download state and matching messages."""

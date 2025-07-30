@@ -1,6 +1,7 @@
 import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+import time
 
 # Track added logging levels
 _added_levels = {}
@@ -33,7 +34,9 @@ logger = logging.getLogger(__name__)
 
 def set_handler_format(log_handler, *, long_format=True):
     if long_format:
-        target_format = logging.Formatter("%(asctime)s | %(levelname)-7s | %(message)s", "%Y-%m-%d %H:%M:%S")
+        # Use local time with US format: MM/DD/YYYY HH:MM:SS AM/PM
+        target_format = logging.Formatter("%(asctime)s | %(levelname)-7s | %(message)s", "%m/%d/%Y %I:%M:%S %p")
+        target_format.converter = lambda *args: time.localtime(time.time())
     else:
         target_format = logging.Formatter("%(levelname)-7s | %(message)s")
     log_handler.setFormatter(target_format)
