@@ -83,9 +83,9 @@ services:
       - PERMITTED_ATTEMPTS=1
       - IGNORE_PRIVATE_TRACKERS=False
       - NO_STALLED_REMOVAL_QBIT_TAG=Don't Kill
-      - RADARR_URL=http://YOUR_RADARR_IP:7878
+      - RADARR_URL=http://192.168.1.94:7878
       - RADARR_KEY=YOUR_RADARR_API_KEY
-      - SONARR_URL=http://YOUR_SONARR_IP:8989
+      - SONARR_URL=http://192.168.1.94:8989
       - SONARR_KEY=YOUR_SONARR_API_KEY
       # Optional: Uncomment and configure additional *arr apps
       # - LIDARR_URL=http://YOUR_LIDARR_IP:8686
@@ -135,9 +135,9 @@ services:
       networks:
       - decluttarr_network
 
-  networks:
-    decluttarr_network:
-      driver: bridge
+networks:
+  decluttarr_network:
+    driver: bridge
 ```
 
 ## 🎯 **What Gets Cleaned (Enhanced)**
